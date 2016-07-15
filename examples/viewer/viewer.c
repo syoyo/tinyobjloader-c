@@ -176,9 +176,8 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
 
     printf("# of shapes    = %d\n", (int)num_shapes);
     printf("# of materiasl = %d\n", (int)num_materials);
-    printf("materials = %p\n", materials);
 
-    {
+    if (0) {
       int i;
       for (i = 0; i < num_shapes; i++) {
         printf("shape[%d] name = %s\n", i, shapes[i].name);
@@ -187,7 +186,6 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
 
   }
 
-  exit(-1);
   bmin[0] = bmin[1] = bmin[2] = FLT_MAX;
   bmax[0] = bmax[1] = bmax[2] = -FLT_MAX;
 

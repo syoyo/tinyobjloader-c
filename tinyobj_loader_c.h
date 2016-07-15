@@ -1226,7 +1226,6 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     free(commands);
   }
 
-  printf("materials = %p\n", materials);
   (*materials_out) = materials;
   (*num_materials_out) = num_materials;
 
