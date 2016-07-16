@@ -162,7 +162,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
   const char* data = get_file_data(&data_len, filename);
   if (data == NULL) {
     exit(-1);
-    return 0;
+    /* return 0; */
   }
   printf("filesize: %d\n", (int)data_len);
 
@@ -177,13 +177,14 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
     printf("# of shapes    = %d\n", (int)num_shapes);
     printf("# of materiasl = %d\n", (int)num_materials);
 
-    if (0) {
+    /*
+    {
       int i;
       for (i = 0; i < num_shapes; i++) {
         printf("shape[%d] name = %s\n", i, shapes[i].name);
       }
     }
-
+    */
   }
 
   bmin[0] = bmin[1] = bmin[2] = FLT_MAX;
@@ -206,8 +207,8 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
       size_t f;
       assert(attrib.face_num_verts[i] % 3 ==
              0); /* assume all triangle faces. */
-      for (f = 0; f < attrib.face_num_verts[i] / 3; f++) {
-        int k;
+      for (f = 0; f < (size_t)attrib.face_num_verts[i] / 3; f++) {
+        size_t k;
         float v[3][3];
         float n[3][3];
         float c[3];
@@ -225,9 +226,9 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
           assert(f1 >= 0);
           assert(f2 >= 0);
 
-          v[0][k] = attrib.vertices[3 * f0 + k];
-          v[1][k] = attrib.vertices[3 * f1 + k];
-          v[2][k] = attrib.vertices[3 * f2 + k];
+          v[0][k] = attrib.vertices[3 * (size_t)f0 + k];
+          v[1][k] = attrib.vertices[3 * (size_t)f1 + k];
+          v[2][k] = attrib.vertices[3 * (size_t)f2 + k];
           bmin[k] = (v[0][k] < bmin[k]) ? v[0][k] : bmin[k];
           bmin[k] = (v[1][k] < bmin[k]) ? v[1][k] : bmin[k];
           bmin[k] = (v[2][k] < bmin[k]) ? v[2][k] : bmin[k];
@@ -241,13 +242,13 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
           int f1 = idx1.vn_idx;
           int f2 = idx2.vn_idx;
           if (f0 >= 0 && f1 >= 0 && f2 >= 0) {
-            assert(f0 < attrib.num_normals);
-            assert(f1 < attrib.num_normals);
-            assert(f2 < attrib.num_normals);
+            assert(f0 < (int)attrib.num_normals);
+            assert(f1 < (int)attrib.num_normals);
+            assert(f2 < (int)attrib.num_normals);
             for (k = 0; k < 3; k++) {
-              n[0][k] = attrib.normals[3 * f0 + k];
-              n[1][k] = attrib.normals[3 * f1 + k];
-              n[2][k] = attrib.normals[3 * f2 + k];
+              n[0][k] = attrib.normals[3 * (size_t)f0 + k];
+              n[1][k] = attrib.normals[3 * (size_t)f1 + k];
+              n[2][k] = attrib.normals[3 * (size_t)f2 + k];
             }
           } else { /* normal index is not defined for this face */
             /* compute geometric normal */
@@ -284,19 +285,19 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
           c[2] = n[k][2];
           len2 = c[0] * c[0] + c[1] * c[1] + c[2] * c[2];
           if (len2 > 0.0f) {
-            float len = (float)sqrt(len2);
+            float len = (float)sqrt((double)len2);
 
             c[0] /= len;
             c[1] /= len;
             c[2] /= len;
           }
 
-          vb[(3 * i + k) * stride + 6] = (c[0] * 0.5 + 0.5);
-          vb[(3 * i + k) * stride + 7] = (c[1] * 0.5 + 0.5);
-          vb[(3 * i + k) * stride + 8] = (c[2] * 0.5 + 0.5);
+          vb[(3 * i + k) * stride + 6] = (c[0] * 0.5f + 0.5f);
+          vb[(3 * i + k) * stride + 7] = (c[1] * 0.5f + 0.5f);
+          vb[(3 * i + k) * stride + 8] = (c[2] * 0.5f + 0.5f);
         }
       }
-      face_offset += attrib.face_num_verts[i];
+      face_offset += (size_t)attrib.face_num_verts[i];
     }
 
     o.vb = 0;
@@ -306,7 +307,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
       glBindBuffer(GL_ARRAY_BUFFER, o.vb);
       glBufferData(GL_ARRAY_BUFFER, num_triangles * 3 * stride * sizeof(float),
                    vb, GL_STATIC_DRAW);
-      o.numTriangles = num_triangles;
+      o.numTriangles = (int)num_triangles;
     }
 
     free(vb);
@@ -314,8 +315,10 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
     gDrawObject = o;
   }
 
-  printf("bmin = %f, %f, %f\n", bmin[0], bmin[1], bmin[2]);
-  printf("bmax = %f, %f, %f\n", bmax[0], bmax[1], bmax[2]);
+  printf("bmin = %f, %f, %f\n", (double)bmin[0], (double)bmin[1],
+         (double)bmin[2]);
+  printf("bmax = %f, %f, %f\n", (double)bmax[0], (double)bmax[1],
+         (double)bmax[2]);
 
   tinyobj_attrib_free(&attrib);
   tinyobj_shapes_free(shapes, num_shapes);
@@ -421,8 +424,6 @@ static void motionFunc(GLFWwindow* window, double mouse_x, double mouse_y) {
 }
 
 static void Draw(const DrawObject* draw_object) {
-  int i;
-
   glPolygonMode(GL_FRONT, GL_FILL);
   glPolygonMode(GL_BACK, GL_FILL);
 
