@@ -8,4 +8,4 @@ endif
 
 all:
 	clang -c trackball.c
-	clang -o viewer -g -O2 -pedantic -ansi -Wno-deprecated-declarations viewer.c trackball.o $(LD_FLAGS)
+	clang -Weverything -o viewer -g -O2 -Wno-disabled-macro-expansion -pedantic -ansi -Wno-deprecated-declarations viewer.c trackball.o $(LD_FLAGS)
