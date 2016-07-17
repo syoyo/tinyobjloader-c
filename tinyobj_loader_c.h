@@ -705,6 +705,12 @@ static int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
     /* @todo { unknown parameter } */
   }
 
+  if (material.name) {
+    /* Flush last material element */
+    materials = tinyobj_material_add(materials, num_materials, &material);
+    num_materials++;
+  }
+
   (*num_materials_out) = num_materials;
   (*materials_out) = materials;
 
