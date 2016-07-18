@@ -1,7 +1,22 @@
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
+#include "../../tinyobj_loader_c.h"
+
 #include <GL/glew.h>
 #include <float.h>
 #include <limits.h>
 #include <math.h>
+
+#ifdef _WIN64
+#define atoll(S) _atoi64(S)
+#include <windows.h>
+#else
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <unistd.h>
+#endif
 
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
@@ -13,8 +28,6 @@
 
 #include "trackball.h"
 
-#define TINYOBJ_LOADER_C_IMPLEMENTATION
-#include "../../tinyobj_loader_c.h"
 
 typedef struct {
   GLuint vb;

@@ -24,23 +24,8 @@ THE SOFTWARE.
 #ifndef TINOBJ_LOADER_C_H_
 #define TINOBJ_LOADER_C_H_
 
-#ifdef _WIN64
-#define atoll(S) _atoi64(S)
-#include <windows.h>
-#else
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <unistd.h>
-#endif
-
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
+/* @todo { Remoe stdlib dependency. size_t? } */
 #include <stdlib.h>
-#include <string.h>
 
 typedef struct {
   char *name;
@@ -118,6 +103,10 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
                                    size_t num_materials);
 
 #ifdef TINYOBJ_LOADER_C_IMPLEMENTATION
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
+
 
 #define TINYOBJ_MAX_FACES_PER_F_LINE (16)
 
