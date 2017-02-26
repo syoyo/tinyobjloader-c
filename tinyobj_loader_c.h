@@ -95,6 +95,9 @@ extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                              size_t *num_shapes, tinyobj_material_t **materials,
                              size_t *num_materials, const char *buf, size_t len,
                              unsigned int flags);
+extern int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
+                                  size_t *num_materials_out,
+                                  const char *filename);
 
 extern void tinyobj_attrib_init(tinyobj_attrib_t *attrib);
 extern void tinyobj_attrib_free(tinyobj_attrib_t *attrib);
@@ -481,7 +484,7 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
   return dst;
 }
 
-static int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
+int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                                   size_t *num_materials_out,
                                   const char *filename) {
   tinyobj_material_t material;
