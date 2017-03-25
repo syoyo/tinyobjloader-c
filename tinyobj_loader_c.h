@@ -1312,9 +1312,6 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
           free(material_name_null_term);
         }
-        else 
-        {
-        }
       } else if (commands[i].type == COMMAND_V) {
         attrib->vertices[3 * v_count + 0] = commands[i].vx;
         attrib->vertices[3 * v_count + 1] = commands[i].vy;
