@@ -674,9 +674,10 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
   return dst;
 }
 
-int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
-                           size_t *num_materials_out,
-                           const char *filename) {
+static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
+                                            size_t *num_materials_out,
+                                            const char *filename,
+                                            hash_table_t* material_table) {
   tinyobj_material_t material;
   char linebuf[8192]; /* alloc enough size */
   FILE *fp;
@@ -736,6 +737,11 @@ int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
       sscanf(token, "%s", namebuf);
 #endif
       material.name = my_strdup(namebuf);
+
+      // Add material to material table
+      if (material_table)
+        hash_table_set(material.name, num_materials, material_table);
+
       continue;
     }
 
@@ -898,6 +904,13 @@ int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
 
   return TINYOBJ_SUCCESS;
 }
+
+int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
+                           size_t *num_materials_out,
+                           const char *filename) {
+  tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, filename, NULL);
+} 
+
 
 typedef enum {
   COMMAND_EMPTY,
@@ -1161,8 +1174,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
   if (num_materials_out == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
 
   tinyobj_attrib_init(attrib);
-
-  /* 1. Find '\n' and create line data. */
+   /* 1. Find '\n' and create line data. */
   {
     size_t i;
     size_t end_idx = len - 1;
@@ -1191,7 +1203,10 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     }
   }
 
-  commands = (Command *)malloc(sizeof(Command) * num_lines);
+  commands = (Command *)malloc(sizeof(Command) * num_lines); 
+
+  hash_table_t material_table;
+  create_hash_table(HASH_TABLE_DEFAULT_SIZE, &material_table);
 
   /* 2. parse each line */
   {
@@ -1229,7 +1244,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     char *filename = my_strndup(commands[mtllib_line_index].mtllib_name,
                                 commands[mtllib_line_index].mtllib_name_len);
 
-    int ret = tinyobj_parse_mtl_file(&materials, &num_materials, filename);
+    int ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, &material_table);
 
     if (ret != TINYOBJ_SUCCESS) {
       /* warning. */
@@ -1282,6 +1297,24 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
         }
         }
         */
+        if (commands[i].material_name &&
+           commands[i].material_name_len >0) 
+        {
+          // Create a null terminated string
+          char* material_name_null_term = (char*) malloc(commands[i].material_name_len + 1);
+          memcpy((void*) material_name_null_term, (void*) commands[i].material_name, commands[i].material_name_len);
+          material_name_null_term[commands[i].material_name_len - 1] = 0;
+
+          if (hash_table_exists(material_name_null_term, &material_table))
+            material_id = hash_table_get(material_name_null_term, &material_table);
+          else
+            material_id = -1;
+
+          free(material_name_null_term);
+        }
+        else 
+        {
+        }
       } else if (commands[i].type == COMMAND_V) {
         attrib->vertices[3 * v_count + 0] = commands[i].vx;
         attrib->vertices[3 * v_count + 1] = commands[i].vy;
@@ -1420,6 +1453,8 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     free(commands);
   }
 
+  destroy_hash_table(&material_table);
+  
   (*materials_out) = materials;
   (*num_materials_out) = num_materials;
 
