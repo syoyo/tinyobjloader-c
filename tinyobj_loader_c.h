@@ -908,7 +908,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                            size_t *num_materials_out,
                            const char *filename) {
-  tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, filename, NULL);
+  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, filename, NULL);
 } 
 
 
