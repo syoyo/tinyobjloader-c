@@ -474,7 +474,7 @@ static void initMaterial(tinyobj_material_t *material) {
   material->ior = 1.f;
 }
 
-// Implementation of string to int hashtable
+/* Implementation of string to int hashtable */
 
 #define HASH_TABLE_ERROR 1 
 #define HASH_TABLE_SUCCESS 0
@@ -485,6 +485,7 @@ typedef struct hash_table_entry_t
 {
   unsigned long hash;
   int filled;
+  int pad0;
   long value;
 
   struct hash_table_entry_t* next;
@@ -504,8 +505,9 @@ static unsigned long hash_djb2(const unsigned char* str)
   unsigned long hash = 5381;
   int c;
 
-  while (c = *str++)
-    hash = ((hash << 5) + hash) + c;
+  while ((c = *str++)) {
+    hash = ((hash << 5) + hash) + (unsigned long)(c);
+  }
 
   return hash;
 }
@@ -526,20 +528,24 @@ static void destroy_hash_table(hash_table_t* hash_table)
   free(hash_table->hashes);
 }
 
-// Insert with quadratic probing
+/* Insert with quadratic probing */
 static int hash_table_insert_value(unsigned long hash, long value, hash_table_t* hash_table)
 {
-  // Insert value
+  /* Insert value */
   size_t start_index = hash % hash_table->capacity;
   size_t index = start_index;
   hash_table_entry_t* last_entry = NULL;
+  size_t i;
+  hash_table_entry_t* entry;
 
-  // While there are collisions, keep probing and log the last entry touched
-  // If we reach an empty entry, append the entry to the last entry's linked list
-  // We form these lists to avoid doing the probing again, The linear search through
-  // the linked list is the length of numbers initially probed, so it's equivalent to
-  // doing the probing again.
-  for (size_t i = 0; hash_table->entries[index].filled; i++)
+  /*
+   * While there are collisions, keep probing and log the last entry touched
+   * If we reach an empty entry, append the entry to the last entry's linked list
+   * We form these lists to avoid doing the probing again, The linear search through
+   * the linked list is the length of numbers initially probed, so it's equivalent to
+   * doing the probing again.
+   */
+  for (i = 0; hash_table->entries[index].filled; i++)
   {
     if (hash_table->entries[index].hash == hash)
       break;
@@ -549,15 +555,16 @@ static int hash_table_insert_value(unsigned long hash, long value, hash_table_t*
     index = (start_index + (i * i)) % hash_table->capacity; 
   }
 
-  hash_table_entry_t* entry = hash_table->entries + index;
+  entry = hash_table->entries + index;
   entry->hash = hash;
   entry->filled = 1;
   entry->value = value;
   entry->next = NULL;
   entry->prev = last_entry;
 
-  if (last_entry)
+  if (last_entry) {
     last_entry->next = entry;
+  }
 
   return HASH_TABLE_SUCCESS;
 }
@@ -589,18 +596,22 @@ static hash_table_entry_t* hash_table_find(unsigned long hash, hash_table_t* has
 
 static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
 {
-  if (new_n <= hash_table->capacity)
-    return;
-  size_t new_capacity = 2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
-  // Create a new hash table. We're not calling create_hash_table because we want to realloc the hash array
+  size_t new_capacity;
   hash_table_t new_hash_table;
+  size_t i;
+
+  if (new_n <= hash_table->capacity) {
+    return;
+  }
+  new_capacity = 2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
+  /* Create a new hash table. We're not calling create_hash_table because we want to realloc the hash array */
   new_hash_table.hashes = hash_table->hashes = (unsigned long*) realloc((void*) hash_table->hashes, sizeof(unsigned long) * new_capacity);
   new_hash_table.entries = (hash_table_entry_t*) calloc(new_capacity, sizeof(hash_table_entry_t));
   new_hash_table.capacity = new_capacity;
   new_hash_table.n = hash_table->n;
 
-  // Rehash
-  for (int i = 0; i < hash_table->capacity; i++)
+  /* Rehash */
+  for (i = 0; i < hash_table->capacity; i++)
   {
     hash_table_entry_t* entry = hash_table_find(hash_table->hashes[i], hash_table);
     hash_table_insert_value(hash_table->hashes[i], entry->value, &new_hash_table);
@@ -612,56 +623,60 @@ static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
 
 static int hash_table_exists(const char* name, hash_table_t* hash_table)
 {
-  return hash_table_find(hash_djb2(name), hash_table) != NULL;
+  return hash_table_find(hash_djb2((const unsigned char*)name), hash_table) != NULL;
 }
 
 static void hash_table_set(const char* name, size_t val, hash_table_t* hash_table)
 {
-  // Hash name
-  unsigned long hash = hash_djb2(name);
+  /* Hash name */
+  unsigned long hash = hash_djb2((const unsigned char *)name);
 
   hash_table_entry_t* entry = hash_table_find(hash, hash_table);
   if (entry)
   {
-    entry->value = val;
+    entry->value = (long)val;
     return;
   }
 
-  // Expand if necessary
-  // Grow until the element has been added
+  /* Expand if necessary
+   * Grow until the element has been added
+   */
   do
   {
     hash_table_maybe_grow(hash_table->n + 1, hash_table);
   }
-  while (hash_table_insert(hash, val, hash_table) != HASH_TABLE_SUCCESS);
+  while (hash_table_insert(hash, (long)val, hash_table) != HASH_TABLE_SUCCESS);
 }
 
 static long hash_table_get(const char* name, hash_table_t* hash_table)
 {
-  hash_table_entry_t* ret = hash_table_find(hash_djb2(name), hash_table);
+  hash_table_entry_t* ret = hash_table_find(hash_djb2((const unsigned char*)(name)), hash_table);
   return ret->value;
 }
 
+#if 0
+/* not used */
 static void hash_table_erase(const char* name, hash_table_t* hash_table)
 {
-  // Find the entry associated with this name
-  hash_table_entry_t* entry = hash_table_find(hash_djb2(name), hash_table);
+  /* Find the entry associated with this name */
+  hash_table_entry_t* entry = hash_table_find(hash_djb2((const unsigned char*)name), hash_table);
   if (!entry)
     return;
 
-  // Mark the entry as empty
+  /* Mark the entry as empty */
   entry->filled = 0;
 
-  // Remove it from the linked list if it's on one
+  /* Remove it from the linked list if it's on one */
   if (entry->prev)
     entry->prev->next = entry->next;
   if (entry->next)
     entry->next->prev = entry->prev;
 
-  // Delete the associated hash from the array by replacing it with the last hash on the table
+  /* Delete the associated hash from the array by replacing it with the last hash on the table */
   hash_table->n--;
   hash_table->hashes[entry - hash_table->entries] = hash_table->hashes[hash_table->n];
 }
+#endif
 
 static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
                                                 size_t num_materials,
@@ -738,7 +753,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 #endif
       material.name = my_strdup(namebuf);
 
-      // Add material to material table
+      /* Add material to material table */
       if (material_table)
         hash_table_set(material.name, num_materials, material_table);
 
@@ -1165,6 +1180,8 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
   tinyobj_material_t *materials = NULL;
   size_t num_materials = 0;
 
+  hash_table_t material_table;
+
   if (len < 1) return TINYOBJ_ERROR_INVALID_PARAMETER;
   if (attrib == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
   if (shapes == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
@@ -1205,7 +1222,6 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
   commands = (Command *)malloc(sizeof(Command) * num_lines); 
 
-  hash_table_t material_table;
   create_hash_table(HASH_TABLE_DEFAULT_SIZE, &material_table);
 
   /* 2. parse each line */
@@ -1300,13 +1316,13 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
         if (commands[i].material_name &&
            commands[i].material_name_len >0) 
         {
-          // Create a null terminated string
+          /* Create a null terminated string */
           char* material_name_null_term = (char*) malloc(commands[i].material_name_len + 1);
-          memcpy((void*) material_name_null_term, (void*) commands[i].material_name, commands[i].material_name_len);
+          memcpy((void*) material_name_null_term, (const void*) commands[i].material_name, commands[i].material_name_len);
           material_name_null_term[commands[i].material_name_len - 1] = 0;
 
           if (hash_table_exists(material_name_null_term, &material_table))
-            material_id = hash_table_get(material_name_null_term, &material_table);
+            material_id = (int)hash_table_get(material_name_null_term, &material_table);
           else
             material_id = -1;
 
