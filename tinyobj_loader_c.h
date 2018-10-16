@@ -1377,7 +1377,6 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     const char *prev_shape_name = NULL;
     unsigned int prev_shape_name_len = 0;
     unsigned int prev_shape_face_offset = 0;
-    unsigned int prev_shape_length = 0;
     unsigned int prev_face_offset = 0;
     tinyobj_shape_t prev_shape = {NULL, 0, 0};
 
@@ -1418,7 +1417,6 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
             (*shapes)[shape_idx].length = face_count - prev_face_offset;
             shape_idx++;
 
-            prev_shape_length = face_count - prev_face_offset;
             prev_face_offset = face_count;
 
           } else {
@@ -1428,7 +1426,6 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
               (*shapes)[shape_idx].face_offset = prev_face_offset;
               (*shapes)[shape_idx].length = face_count - prev_face_offset;
               shape_idx++;
-              prev_shape_length = face_count - prev_face_offset;
               prev_face_offset = face_count;
             }
           }
@@ -1437,7 +1434,6 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
           prev_shape_name = shape_name;
           prev_shape_name_len = shape_name_len;
           prev_shape_face_offset = face_count;
-          prev_shape_length = 0;
         }
       }
       if (commands[i].type == COMMAND_F) {
