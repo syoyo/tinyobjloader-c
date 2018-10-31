@@ -1390,7 +1390,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     /* Allocate array of shapes with maximum possible size(+1 for unnamed
      * group/object).
      * Actual # of shapes found in .obj is determined in the later */
-    (*shapes) = malloc(sizeof(tinyobj_shape_t) * (n + 1));
+    (*shapes) = (tinyobj_shape_t*)malloc(sizeof(tinyobj_shape_t) * (n + 1));
 
     for (i = 0; i < num_lines; i++) {
       if (commands[i].type == COMMAND_O || commands[i].type == COMMAND_G) {
