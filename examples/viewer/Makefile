@@ -1,6 +1,6 @@
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-LD_FLAGS=-framework OpenGL -lglfw3 -lglew
+LD_FLAGS=-framework OpenGL -lglfw3 -lglew -framework Cocoa -framework IOKit -framework CoreVideo
 endif
 ifeq ($(UNAME_S),Linux)
 LD_FLAGS=-lGL -lGLU -lglfw3 -lGLEW -lX11 -lXrandr -lXinerama -lXxf86vm -lXcursor -lm -pthread -ldl
