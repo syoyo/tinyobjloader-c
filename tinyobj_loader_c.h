@@ -89,8 +89,8 @@ typedef struct {
 
 /* Parse wavefront .obj(.obj string data is expanded to linear char array `buf')
  * flags are combination of TINYOBJ_FLAG_***
- * Retruns TINYOBJ_SUCCESS if things goes well.
- * Retruns TINYOBJ_ERR_*** when there is an error.
+ * Returns TINYOBJ_SUCCESS if things goes well.
+ * Returns TINYOBJ_ERR_*** when there is an error.
  */
 extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                              size_t *num_shapes, tinyobj_material_t **materials,
