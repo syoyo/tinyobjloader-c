@@ -1194,12 +1194,12 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
    /* 1. Find '\n' and create line data. */
   {
     size_t i;
-    size_t end_idx = len - 1;
+    size_t end_idx = len;
     size_t prev_pos = 0;
     size_t line_no = 0;
 
     /* Count # of lines. */
-    for (i = 0; i < end_idx; i++) { /* Assume last char is '\0' */
+    for (i = 0; i < end_idx; i++) {
       if (is_line_ending(buf, i, end_idx)) {
         num_lines++;
       }
@@ -1209,7 +1209,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
     line_infos = (LineInfo *)malloc(sizeof(LineInfo) * num_lines);
 
-    /* Fill line infoss. */
+    /* Fill line infos. */
     for (i = 0; i < end_idx; i++) {
       if (is_line_ending(buf, i, end_idx)) {
         line_infos[line_no].pos = prev_pos;
