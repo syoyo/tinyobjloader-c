@@ -32,6 +32,20 @@ Copy `tinyobj_loader_c.h` to your project.
 
 See `examples/viewer/` for more details.
 
+## Tests
+
+The single header test library [acutest](https://github.com/mity/acutest) is used to provide a test runner and assertion macros. There are two test suites: one for the API and one for the internal functions. Ultimately the internal tests should be removed, but are useful while the project is volatile.
+
+The tests can be run from the project root using:
+
+```
+$ make test
+```
+
+This builds and executes a binary called `tinyobj_tests` in the test folder. There are some options to run specific tests that can be passed to the executable directly that are described on the [acutest readme](https://github.com/mity/acutest#running-unit-tests).
+
+By default acutest forks for each test. To disable this for debugging purposes, you can pass the switch `--no-exec` to `tinyobj_tests`.
+
 ## License
 
 MIT license.
