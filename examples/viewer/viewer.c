@@ -207,7 +207,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
     }
 
     printf("# of shapes    = %d\n", (int)num_shapes);
-    printf("# of materiasl = %d\n", (int)num_materials);
+    printf("# of materials = %d\n", (int)num_materials);
 
     /*
     {
