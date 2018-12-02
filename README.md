@@ -15,6 +15,7 @@ Experimental. Loading geometry data would be OK, More testing required for mater
 * Provides mostly similar functionality as in C++ version. https://github.com/syoyo/tinyobjloader
 * Moderate speed and moderate memory consumption
   * Rungholt 7M triangle scene(260 MB) can be loaded in 4.7 secs and consumes 3.6 GB memory at the maximum on MacBook12 Core m5 1.2 GHz(single core use)
+* Unit tests using acutest thanks to @andystanton 
 
 
 ## Usage
@@ -50,7 +51,10 @@ By default acutest forks for each test. To disable this for debugging purposes, 
 
 MIT license.
 
+### Third party licenses
+
+* acutest Another C/C++ Unit Test facility. MIT license. http://github.com/mity/acutest
+
 ## TODO
 
-* [ ] Testing.
-* [ ] Windows build
+* [ ] Windows build?
