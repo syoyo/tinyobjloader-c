@@ -29,6 +29,7 @@ TEST_LIST = {
     { "hash_table_set",         test_hash_table_set },
     { "hash_table_exists",      test_hash_table_exists },
     { "hash_table_get",         test_hash_table_get },
+    { "hash_table_maybe_grow",  test_hash_table_maybe_grow },
 
     { 0 } // required by acutest
 };
