@@ -20,5 +20,6 @@ void test_create_hash_table(void);
 void test_hash_table_set(void);
 void test_hash_table_exists(void);
 void test_hash_table_get(void);
+void test_hash_table_maybe_grow(void);
 
 #endif

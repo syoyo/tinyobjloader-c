@@ -868,3 +868,39 @@ void test_hash_table_get(void)
 
     destroy_hash_table(&table);
 }
+
+void test_hash_table_maybe_grow(void)
+{
+    // It should be possible for the table to grow, preserving all previous values
+    hash_table_t table;
+    create_hash_table(10, &table);
+
+    hash_table_set("Pottery_clay0", 0, &table);
+    hash_table_set("Dark_smoked_gla0", 1, &table);
+    hash_table_set("Pottery_clay1", 2, &table);
+    hash_table_set("Dark_smoked_gla1", 3, &table);
+    hash_table_set("Metallic_Varni0", 4, &table);
+    hash_table_set("Body0", 5, &table);
+    hash_table_set("Pottery_clay2", 6, &table);
+    hash_table_set("850matri0", 7, &table);
+    hash_table_set("850matri1", 8, &table);
+    hash_table_set("Pottery_clay3", 9, &table);
+    hash_table_set("Pottery_clay4", 10, &table);
+
+    TEST_CHECK(table.capacity > 10);
+    TEST_CHECK(table.n == 11);
+
+    TEST_CHECK(hash_table_get("Pottery_clay0", &table) == 0);
+    TEST_CHECK(hash_table_get("Dark_smoked_gla0", &table) == 1);
+    TEST_CHECK(hash_table_get("Pottery_clay1", &table) == 2);
+    TEST_CHECK(hash_table_get("Dark_smoked_gla1", &table) == 3);
+    TEST_CHECK(hash_table_get("Metallic_Varni0", &table) == 4);
+    TEST_CHECK(hash_table_get("Body0", &table) == 5);
+    TEST_CHECK(hash_table_get("Pottery_clay2", &table) == 6);
+    TEST_CHECK(hash_table_get("850matri0", &table) == 7);
+    TEST_CHECK(hash_table_get("850matri1", &table) == 8);
+    TEST_CHECK(hash_table_get("Pottery_clay3", &table) == 9);
+    TEST_CHECK(hash_table_get("Pottery_clay4", &table) == 10);
+
+    destroy_hash_table(&table);
+}
