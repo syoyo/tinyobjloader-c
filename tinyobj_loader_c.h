@@ -110,6 +110,7 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
 
 
 #define TINYOBJ_MAX_FACES_PER_F_LINE (16)
@@ -678,6 +679,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 
   fp = fopen(filename, "r");
   if (!fp) {
+    fprintf(stderr, "TINYOBJ: Error reading file '%s': %s (%d)\n", filename, strerror(errno), errno);
     return TINYOBJ_ERROR_FILE_OPERATION;
   }
 
@@ -1242,7 +1244,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
     if (ret != TINYOBJ_SUCCESS) {
       /* warning. */
-      fprintf(stderr, "TINYOBJ: Failed to parse .mtl file: %s\n", filename);
+      fprintf(stderr, "TINYOBJ: Failed to parse material file '%s': %d\n", filename, ret);
     }
 
     free(filename);
