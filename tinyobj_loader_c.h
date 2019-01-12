@@ -156,6 +156,19 @@ static int length_until_newline(const char *token, size_t n) {
   return (int)len;
 }
 
+static int length_until_line_feed(const char *token, size_t n) {
+  size_t len = 0;
+
+  /* Assume token[n-1] = '\0' */
+  for (len = 0; len < n; len++) {
+    if ((token[len] == '\n') || (token[len] == '\r')) {
+      break;
+    }
+  }
+
+  return (int)len;
+}
+
 /* http://stackoverflow.com/questions/5710091/how-does-atoi-function-in-c-work
 */
 static int my_atoi(const char *c) {
@@ -417,17 +430,20 @@ static void parseFloat3(float *x, float *y, float *z, const char **token) {
   (*z) = parseFloat(token);
 }
 
-static char *my_strdup(const char *s) {
+static char *my_strdup(const char *s, int max_length) {
   char *d;
   size_t len;
 
   if (s == NULL) return NULL;
 
-  len = strlen(s);
+  // Do not consider CRLF line ending(#19)
+  len = length_until_line_feed(s, max_length);
+  //len = strlen(s);
 
+  // trim line ending and append '\0'
   d = (char *)malloc(len + 1); /* + '\0' */
-  memcpy(d, s, (size_t)len);
-  d[len] = '\0';
+  memcpy(d, s, (size_t)(len));
+  d[len+1] = '\0';
 
   return d;
 }
@@ -660,11 +676,12 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
                                             const char *filename,
                                             hash_table_t* material_table) {
   tinyobj_material_t material;
-  char linebuf[8192]; /* alloc enough size */
+  char linebuf[8192]; /* TODO(syoyo): alloc enough size */
   FILE *fp;
   size_t num_materials = 0;
   tinyobj_material_t *materials = NULL;
   int has_previous_material = 0;
+  const char *line_end = NULL;
 
   if (materials_out == NULL) {
     return TINYOBJ_ERROR_INVALID_PARAMETER;
@@ -686,8 +703,12 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   /* Create a default material */
   initMaterial(&material);
 
+  /* TODO(syoyo) Support line larger than 8191 */
   while (NULL != fgets(linebuf, 8192 - 1, fp)) {
     const char *token = linebuf;
+
+    line_end = token + strlen(token);
+
     /* Skip leading space. */
     token += strspn(token, " \t");
 
@@ -718,7 +739,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 #else
       sscanf(token, "%s", namebuf);
 #endif
-      material.name = my_strdup(namebuf);
+      material.name = my_strdup(namebuf, line_end - token);
 
       /* Add material to material table */
       if (material_table)
@@ -819,56 +840,56 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
     /* ambient texture */
     if ((0 == strncmp(token, "map_Ka", 6)) && IS_SPACE(token[6])) {
       token += 7;
-      material.ambient_texname = my_strdup(token);
+      material.ambient_texname = my_strdup(token, line_end - token);
       continue;
     }
 
     /* diffuse texture */
     if ((0 == strncmp(token, "map_Kd", 6)) && IS_SPACE(token[6])) {
       token += 7;
-      material.diffuse_texname = my_strdup(token);
+      material.diffuse_texname = my_strdup(token, line_end - token);
       continue;
     }
 
     /* specular texture */
     if ((0 == strncmp(token, "map_Ks", 6)) && IS_SPACE(token[6])) {
       token += 7;
-      material.specular_texname = my_strdup(token);
+      material.specular_texname = my_strdup(token, line_end - token);
       continue;
     }
 
     /* specular highlight texture */
     if ((0 == strncmp(token, "map_Ns", 6)) && IS_SPACE(token[6])) {
       token += 7;
-      material.specular_highlight_texname = my_strdup(token);
+      material.specular_highlight_texname = my_strdup(token, line_end - token);
       continue;
     }
 
     /* bump texture */
     if ((0 == strncmp(token, "map_bump", 8)) && IS_SPACE(token[8])) {
       token += 9;
-      material.bump_texname = my_strdup(token);
+      material.bump_texname = my_strdup(token, line_end - token);
       continue;
     }
 
     /* alpha texture */
     if ((0 == strncmp(token, "map_d", 5)) && IS_SPACE(token[5])) {
       token += 6;
-      material.alpha_texname = my_strdup(token);
+      material.alpha_texname = my_strdup(token, line_end - token);
       continue;
     }
 
     /* bump texture */
     if ((0 == strncmp(token, "bump", 4)) && IS_SPACE(token[4])) {
       token += 5;
-      material.bump_texname = my_strdup(token);
+      material.bump_texname = my_strdup(token, line_end - token);
       continue;
     }
 
     /* displacement texture */
     if ((0 == strncmp(token, "disp", 4)) && IS_SPACE(token[4])) {
       token += 5;
-      material.displacement_texname = my_strdup(token);
+      material.displacement_texname = my_strdup(token, line_end - token);
       continue;
     }
 

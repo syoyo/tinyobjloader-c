@@ -1,5 +1,6 @@
 #include "tinyobj_internal_tests.h"
 #include "tinyobj_api_tests.h"
+#include "tinyobj_regression_tests.h"
 
 #include "acutest.h"
 
@@ -30,6 +31,8 @@ TEST_LIST = {
     { "hash_table_exists",      test_hash_table_exists },
     { "hash_table_get",         test_hash_table_get },
     { "hash_table_maybe_grow",  test_hash_table_maybe_grow },
+
+    { "crlf_string",  test_tinyobj_crlf_string },
 
     { 0 } // required by acutest
 };

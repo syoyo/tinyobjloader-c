@@ -278,7 +278,7 @@ void test_tryParseDouble(void)
     {
         // Return value for empty string should be false. Result should be double 0.
         const char * test_string = "";
-        double result;
+        double result = 0.0;
         int success = tryParseDouble(test_string, test_string + strlen(test_string), &result);
         TEST_CHECK(!success);
         TEST_CHECK(result == 0.0);
@@ -288,7 +288,7 @@ void test_tryParseDouble(void)
     {
         // Return value for string 0 should be true. Result should be double 0.
         const char * test_string = "0";
-        double result;
+        double result = 0.0;
         int success = tryParseDouble(test_string, test_string + strlen(test_string), &result);
         TEST_CHECK(success);
         TEST_CHECK(result == 0.0);
@@ -297,7 +297,7 @@ void test_tryParseDouble(void)
     {
         // Return value for string +0 should be true. Result should be double 0.
         const char * test_string = "+0";
-        double result;
+        double result = 0.0;
         int success = tryParseDouble(test_string, test_string + strlen(test_string), &result);
         TEST_CHECK(success);
         TEST_CHECK(result == 0.0);
@@ -306,7 +306,7 @@ void test_tryParseDouble(void)
     {
         // Return value for string -0 should be true. Result should be double 0.
         const char * test_string = "-0";
-        double result;
+        double result = 0.0;
         int success = tryParseDouble(test_string, test_string + strlen(test_string), &result);
         TEST_CHECK(success);
         TEST_CHECK(result == 0.0);
@@ -619,7 +619,7 @@ void test_my_strdup(void)
         // Return value for a regular string should be a new string whose
         // contents are equal to the original.
         char * test_string = "potato";
-        char * result = my_strdup(test_string);
+        char * result = my_strdup(test_string, strlen(test_string));
         TEST_CHECK(test_string != result);
         TEST_CHECK(strcmp(test_string, result) == 0);
         free(result);
@@ -628,7 +628,7 @@ void test_my_strdup(void)
     {
         // Return value for empty string should be a new empty string.
         char * test_string = "";
-        char * result = my_strdup(test_string);
+        char * result = my_strdup(test_string, strlen(test_string));
         TEST_CHECK(test_string != result);
         TEST_CHECK(strcmp(test_string, result) == 0);
         free(result);
