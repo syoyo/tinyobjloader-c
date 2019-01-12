@@ -112,6 +112,20 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #include <string.h>
 #include <errno.h>
 
+#if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_REALLOC) && defined(TINYOBJ_CALLOC) && defined(TINYOBJ_FREE)
+// ok
+#elif !defined(TINYOBJ_MALLOC) && !defined(TINYOBJ_REALLOC) && !defined(TINYOBJ_CALLOC) && !defined(TINYOBJ_FREE)
+// ok
+#else
+#error "Must define all or none of TINYOBJ_MALLOC, TINYOBJ_REALLOC, TINYOBJ_CALLOC and TINYOBJ_FREE."
+#endif
+
+#ifndef TINYOBJ_MALLOC
+#define TINYOBJ_MALLOC malloc
+#define TINYOBJ_REALLOC realloc
+#define TINYOBJ_CALLOC calloc
+#define TINYOBJ_FREE free
+#endif
 
 #define TINYOBJ_MAX_FACES_PER_F_LINE (16)
 
@@ -441,7 +455,7 @@ static char *my_strdup(const char *s, int max_length) {
   //len = strlen(s);
 
   // trim line ending and append '\0'
-  d = (char *)malloc(len + 1); /* + '\0' */
+  d = (char *)TINYOBJ_MALLOC(len + 1); /* + '\0' */
   memcpy(d, s, (size_t)(len));
   d[len+1] = '\0';
 
@@ -455,7 +469,7 @@ static char *my_strndup(const char *s, size_t len) {
   if (s == NULL) return NULL;
   if (len == 0) return NULL;
 
-  d = (char *)malloc(len + 1); /* + '\0' */
+  d = (char *)TINYOBJ_MALLOC(len + 1); /* + '\0' */
   slen = strlen(s);
   if (slen < len) {
     memcpy(d, s, slen);
@@ -532,16 +546,16 @@ static void create_hash_table(size_t start_capacity, hash_table_t* hash_table)
 {
   if (start_capacity < 1)
     start_capacity = HASH_TABLE_DEFAULT_SIZE;
-  hash_table->hashes = (unsigned long*) malloc(start_capacity * sizeof(unsigned long));
-  hash_table->entries = (hash_table_entry_t*) calloc(start_capacity, sizeof(hash_table_entry_t));
+  hash_table->hashes = (unsigned long*) TINYOBJ_MALLOC(start_capacity * sizeof(unsigned long));
+  hash_table->entries = (hash_table_entry_t*) TINYOBJ_CALLOC(start_capacity, sizeof(hash_table_entry_t));
   hash_table->capacity = start_capacity;
   hash_table->n = 0;
 }
 
 static void destroy_hash_table(hash_table_t* hash_table)
 {
-  free(hash_table->entries);
-  free(hash_table->hashes);
+  TINYOBJ_FREE(hash_table->entries);
+  TINYOBJ_FREE(hash_table->hashes);
 }
 
 /* Insert with quadratic probing */
@@ -611,8 +625,8 @@ static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
   }
   new_capacity = 2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
   /* Create a new hash table. We're not calling create_hash_table because we want to realloc the hash array */
-  new_hash_table.hashes = hash_table->hashes = (unsigned long*) realloc((void*) hash_table->hashes, sizeof(unsigned long) * new_capacity);
-  new_hash_table.entries = (hash_table_entry_t*) calloc(new_capacity, sizeof(hash_table_entry_t));
+  new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC((void*) hash_table->hashes, sizeof(unsigned long) * new_capacity);
+  new_hash_table.entries = (hash_table_entry_t*) TINYOBJ_CALLOC(new_capacity, sizeof(hash_table_entry_t));
   new_hash_table.capacity = new_capacity;
   new_hash_table.n = hash_table->n;
 
@@ -623,7 +637,7 @@ static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
     hash_table_insert_value(hash_table->hashes[i], entry->value, &new_hash_table);
   }
 
-  free(hash_table->entries);
+  TINYOBJ_FREE(hash_table->entries);
   (*hash_table) = new_hash_table;
 }
 
@@ -664,7 +678,7 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
                                                 size_t num_materials,
                                                 tinyobj_material_t *new_mat) {
   tinyobj_material_t *dst;
-  dst = (tinyobj_material_t *)realloc(
+  dst = (tinyobj_material_t *)TINYOBJ_REALLOC(
                                       prev, sizeof(tinyobj_material_t) * (num_materials + 1));
 
   dst[num_materials] = (*new_mat); /* Just copy pointer for char* members */
@@ -1204,7 +1218,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
     if (num_lines == 0) return TINYOBJ_ERROR_EMPTY;
 
-    line_infos = (LineInfo *)malloc(sizeof(LineInfo) * num_lines);
+    line_infos = (LineInfo *)TINYOBJ_MALLOC(sizeof(LineInfo) * num_lines);
 
     /* Fill line infos. */
     for (i = 0; i < end_idx; i++) {
@@ -1221,7 +1235,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     }
   }
 
-  commands = (Command *)malloc(sizeof(Command) * num_lines); 
+  commands = (Command *)TINYOBJ_MALLOC(sizeof(Command) * num_lines); 
 
   create_hash_table(HASH_TABLE_DEFAULT_SIZE, &material_table);
 
@@ -1252,7 +1266,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
   /* line_infos are not used anymore. Release memory. */
   if (line_infos) {
-    free(line_infos);
+    TINYOBJ_FREE(line_infos);
   }
 
   /* Load material(if exits) */
@@ -1268,7 +1282,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
       fprintf(stderr, "TINYOBJ: Failed to parse material file '%s': %d\n", filename, ret);
     }
 
-    free(filename);
+    TINYOBJ_FREE(filename);
 
   }
 
@@ -1283,17 +1297,17 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     int material_id = -1; /* -1 = default unknown material. */
     size_t i = 0;
 
-    attrib->vertices = (float *)malloc(sizeof(float) * num_v * 3);
+    attrib->vertices = (float *)TINYOBJ_MALLOC(sizeof(float) * num_v * 3);
     attrib->num_vertices = (unsigned int)num_v;
-    attrib->normals = (float *)malloc(sizeof(float) * num_vn * 3);
+    attrib->normals = (float *)TINYOBJ_MALLOC(sizeof(float) * num_vn * 3);
     attrib->num_normals = (unsigned int)num_vn;
-    attrib->texcoords = (float *)malloc(sizeof(float) * num_vt * 2);
+    attrib->texcoords = (float *)TINYOBJ_MALLOC(sizeof(float) * num_vt * 2);
     attrib->num_texcoords = (unsigned int)num_vt;
-    attrib->faces = (tinyobj_vertex_index_t *)malloc(
+    attrib->faces = (tinyobj_vertex_index_t *)TINYOBJ_MALLOC(
                                                      sizeof(tinyobj_vertex_index_t) * num_f);
     attrib->num_faces = (unsigned int)num_f;
-    attrib->face_num_verts = (int *)malloc(sizeof(int) * num_faces);
-    attrib->material_ids = (int *)malloc(sizeof(int) * num_faces);
+    attrib->face_num_verts = (int *)TINYOBJ_MALLOC(sizeof(int) * num_faces);
+    attrib->material_ids = (int *)TINYOBJ_MALLOC(sizeof(int) * num_faces);
     attrib->num_face_num_verts = (unsigned int)num_faces;
 
     for (i = 0; i < num_lines; i++) {
@@ -1318,7 +1332,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
            commands[i].material_name_len >0) 
         {
           /* Create a null terminated string */
-          char* material_name_null_term = (char*) malloc(commands[i].material_name_len + 1);
+          char* material_name_null_term = (char*) TINYOBJ_MALLOC(commands[i].material_name_len + 1);
           memcpy((void*) material_name_null_term, (const void*) commands[i].material_name, commands[i].material_name_len);
           material_name_null_term[commands[i].material_name_len - 1] = 0;
 
@@ -1327,7 +1341,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
           else
             material_id = -1;
 
-          free(material_name_null_term);
+          TINYOBJ_FREE(material_name_null_term);
         }
       } else if (commands[i].type == COMMAND_V) {
         attrib->vertices[3 * v_count + 0] = commands[i].vx;
@@ -1391,7 +1405,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     /* Allocate array of shapes with maximum possible size(+1 for unnamed
      * group/object).
      * Actual # of shapes found in .obj is determined in the later */
-    (*shapes) = (tinyobj_shape_t*)malloc(sizeof(tinyobj_shape_t) * (n + 1));
+    (*shapes) = (tinyobj_shape_t*)TINYOBJ_MALLOC(sizeof(tinyobj_shape_t) * (n + 1));
 
     for (i = 0; i < num_lines; i++) {
       if (commands[i].type == COMMAND_O || commands[i].type == COMMAND_G) {
@@ -1460,7 +1474,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
   }
 
   if (commands) {
-    free(commands);
+    TINYOBJ_FREE(commands);
   }
 
   destroy_hash_table(&material_table);
@@ -1486,12 +1500,12 @@ void tinyobj_attrib_init(tinyobj_attrib_t *attrib) {
 }
 
 void tinyobj_attrib_free(tinyobj_attrib_t *attrib) {
-  if (attrib->vertices) free(attrib->vertices);
-  if (attrib->normals) free(attrib->normals);
-  if (attrib->texcoords) free(attrib->texcoords);
-  if (attrib->faces) free(attrib->faces);
-  if (attrib->face_num_verts) free(attrib->face_num_verts);
-  if (attrib->material_ids) free(attrib->material_ids);
+  if (attrib->vertices) TINYOBJ_FREE(attrib->vertices);
+  if (attrib->normals) TINYOBJ_FREE(attrib->normals);
+  if (attrib->texcoords) TINYOBJ_FREE(attrib->texcoords);
+  if (attrib->faces) TINYOBJ_FREE(attrib->faces);
+  if (attrib->face_num_verts) TINYOBJ_FREE(attrib->face_num_verts);
+  if (attrib->material_ids) TINYOBJ_FREE(attrib->material_ids);
 }
 
 void tinyobj_shapes_free(tinyobj_shape_t *shapes, size_t num_shapes) {
@@ -1499,10 +1513,10 @@ void tinyobj_shapes_free(tinyobj_shape_t *shapes, size_t num_shapes) {
   if (shapes == NULL) return;
 
   for (i = 0; i < num_shapes; i++) {
-    if (shapes[i].name) free(shapes[i].name);
+    if (shapes[i].name) TINYOBJ_FREE(shapes[i].name);
   }
 
-  free(shapes);
+  TINYOBJ_FREE(shapes);
 }
 
 void tinyobj_materials_free(tinyobj_material_t *materials,
@@ -1511,19 +1525,19 @@ void tinyobj_materials_free(tinyobj_material_t *materials,
   if (materials == NULL) return;
 
   for (i = 0; i < num_materials; i++) {
-    if (materials[i].name) free(materials[i].name);
-    if (materials[i].ambient_texname) free(materials[i].ambient_texname);
-    if (materials[i].diffuse_texname) free(materials[i].diffuse_texname);
-    if (materials[i].specular_texname) free(materials[i].specular_texname);
+    if (materials[i].name) TINYOBJ_FREE(materials[i].name);
+    if (materials[i].ambient_texname) TINYOBJ_FREE(materials[i].ambient_texname);
+    if (materials[i].diffuse_texname) TINYOBJ_FREE(materials[i].diffuse_texname);
+    if (materials[i].specular_texname) TINYOBJ_FREE(materials[i].specular_texname);
     if (materials[i].specular_highlight_texname)
-      free(materials[i].specular_highlight_texname);
-    if (materials[i].bump_texname) free(materials[i].bump_texname);
+      TINYOBJ_FREE(materials[i].specular_highlight_texname);
+    if (materials[i].bump_texname) TINYOBJ_FREE(materials[i].bump_texname);
     if (materials[i].displacement_texname)
-      free(materials[i].displacement_texname);
-    if (materials[i].alpha_texname) free(materials[i].alpha_texname);
+      TINYOBJ_FREE(materials[i].displacement_texname);
+    if (materials[i].alpha_texname) TINYOBJ_FREE(materials[i].alpha_texname);
   }
 
-  free(materials);
+  TINYOBJ_FREE(materials);
 }
 #endif /* TINYOBJ_LOADER_C_IMPLEMENTATION */
 
