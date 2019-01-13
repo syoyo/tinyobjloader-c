@@ -33,6 +33,21 @@ Copy `tinyobj_loader_c.h` to your project.
 
 See `examples/viewer/` for more details.
 
+tinyobjloader allocates memory. To replace the functions used for allocation,
+define `TINYOBJ_MALLOC`, `TINYOBJ_REALLOC`, `TINYOBJ_CALLOC` and `TINYOBJ_FREE` in the .c file
+you defined `TINYOBJ_LOADER_C_IMPLEMENTATION` in, before including `tinyobj_loader_c.h`.
+Define either all or none of them. They replace `malloc`, `realloc`, `calloc` and `free` respectively.
+
+Example:
+```
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
+#define TINYOBJ_MALLOC my_malloc
+#define TINYOBJ_REALLOC my_realloc
+#define TINYOBJ_CALLOC my_calloc
+#define TINYOBJ_FREE my_free
+#include "tinyobj_loader_c.h"
+```
+
 ## Tests
 
 The single header test library [acutest](https://github.com/mity/acutest) is used to provide a test runner and assertion macros. There are two test suites: one for the API and one for the internal functions. Ultimately the internal tests should be removed, but are useful while the project is volatile.
