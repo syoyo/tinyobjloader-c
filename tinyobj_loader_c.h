@@ -24,8 +24,8 @@
 #ifndef TINOBJ_LOADER_C_H_
 #define TINOBJ_LOADER_C_H_
 
-/* @todo { Remoe stdlib dependency. size_t? } */
-#include <stdlib.h>
+/* @todo { Remove stddef dependency. size_t? } */
+#include <stddef.h>
 
 typedef struct {
   char *name;
@@ -121,6 +121,7 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #endif
 
 #ifndef TINYOBJ_MALLOC
+#include <stdlib.h>
 #define TINYOBJ_MALLOC malloc
 #define TINYOBJ_REALLOC realloc
 #define TINYOBJ_CALLOC calloc
