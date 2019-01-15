@@ -113,9 +113,9 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #include <errno.h>
 
 #if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_REALLOC) && defined(TINYOBJ_CALLOC) && defined(TINYOBJ_FREE)
-// ok
+/* ok */
 #elif !defined(TINYOBJ_MALLOC) && !defined(TINYOBJ_REALLOC) && !defined(TINYOBJ_CALLOC) && !defined(TINYOBJ_FREE)
-// ok
+/* ok */
 #else
 #error "Must define all or none of TINYOBJ_MALLOC, TINYOBJ_REALLOC, TINYOBJ_CALLOC and TINYOBJ_FREE."
 #endif
@@ -450,11 +450,11 @@ static char *my_strdup(const char *s, int max_length) {
 
   if (s == NULL) return NULL;
 
-  // Do not consider CRLF line ending(#19)
+  /* Do not consider CRLF line ending(#19) */
   len = length_until_line_feed(s, max_length);
-  //len = strlen(s);
+  /* len = strlen(s); */
 
-  // trim line ending and append '\0'
+  /* trim line ending and append '\0' */
   d = (char *)TINYOBJ_MALLOC(len + 1); /* + '\0' */
   memcpy(d, s, (size_t)(len));
   d[len+1] = '\0';
