@@ -1,8 +1,8 @@
-.PHONY: clean all test
+.PHONY: clean all test ansicompile
 
-CFLAGS=-I.. -g -O0
+CFLAGS=-I.. -g -O0 -std=c99
 
-all: test
+all: test ansicompile
 
 tinyobj_tests: tinyobj_tests.o tinyobj_internal_tests.o tinyobj_api_tests.o tinyobj_regression_tests.o
 
@@ -14,6 +14,9 @@ tinyobj_regression_tests.o: tinyobj_regression_tests.c tinyobj_regression_tests.
 
 test: tinyobj_tests
 	@./tinyobj_tests
+
+ansicompile: ../tinyobj_loader_c.h
+	$(CC) -I.. -g -O0 -ansi -Wall -Wextra -Wshadow -Wconversion -Wformat=2 -pedantic -DTINYOBJ_LOADER_C_IMPLEMENTATION -fsyntax-only $<
 
 clean:
 	@rm -rf tinyobj_tests tinyobj_tests.o tinyobj_internal_tests.o tinyobj_api_tests.o tinyobj_regression_tests.o

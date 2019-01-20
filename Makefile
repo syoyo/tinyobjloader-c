@@ -3,7 +3,7 @@
 all: test
 
 test:
-	@$(MAKE) -sC test test
+	@$(MAKE) -sC test
 
 examples:
 	@$(MAKE) -sC examples/viewer
