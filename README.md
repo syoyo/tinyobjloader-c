@@ -1,6 +1,6 @@
 # tinyobjloader in C
 
-Tiny but powerful header only wavefront obj loader written in C89.
+Tiny but powerful header only wavefront obj loader written in C99(Can also be compilable with C89 compiler).
 
 If you are looking for C++ version, please see https://github.com/syoyo/tinyobjloader
 
@@ -11,7 +11,7 @@ Experimental. Loading geometry data would be OK, More testing required for mater
 ## Features
 
 * Single file, header only 
-* Dependency-free pure C89 implementation(except for `libc`)
+* Dependency-free pure C99/C89 implementation(except for `libc`)
 * Provides mostly similar functionality as in C++ version. https://github.com/syoyo/tinyobjloader
 * Moderate speed and moderate memory consumption
   * Rungholt 7M triangle scene(260 MB) can be loaded in 4.7 secs and consumes 3.6 GB memory at the maximum on MacBook12 Core m5 1.2 GHz(single core use)
