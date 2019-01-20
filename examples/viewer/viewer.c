@@ -1,16 +1,7 @@
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "../../tinyobj_loader_c.h"
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-#endif
-
 #include <GL/glew.h>
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 #include <float.h>
 #include <limits.h>
@@ -28,11 +19,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-#endif
-
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
@@ -42,10 +28,6 @@
 #include <GLFW/glfw3.h>
 
 #include "trackball.h"
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 
 typedef struct {
@@ -596,4 +578,5 @@ int main(int argc, char** argv) {
   }
 
   glfwTerminate();
+  return 0;
 }
