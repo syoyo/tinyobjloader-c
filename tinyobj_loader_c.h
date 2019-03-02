@@ -483,6 +483,31 @@ static char *my_strndup(const char *s, size_t len) {
   return d;
 }
 
+char *dynamic_fgets(char **buf, size_t *size, FILE *file) {
+  char *offset;
+  char *ret;
+  size_t old_size;
+
+  if (!(ret = fgets(*buf, (int)*size, file))) {
+    return ret;
+  }
+
+  if (NULL != strchr(*buf, '\n')) {
+    return ret;
+  }
+
+  do {
+    old_size = *size;
+    *size *= 2;
+    *buf = (char*)TINYOBJ_REALLOC(*buf, *size);
+    offset = &((*buf)[old_size - 1]);
+
+    ret = fgets(offset, (int)(old_size + 1), file);
+  } while(ret && (NULL == strchr(*buf, '\n')));
+
+  return ret;
+}
+
 static void initMaterial(tinyobj_material_t *material) {
   int i;
   material->name = NULL;
@@ -691,7 +716,8 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
                                             const char *filename,
                                             hash_table_t* material_table) {
   tinyobj_material_t material;
-  char linebuf[8192]; /* TODO(syoyo): alloc enough size */
+  size_t buffer_size = 128;
+  char *linebuf;
   FILE *fp;
   size_t num_materials = 0;
   tinyobj_material_t *materials = NULL;
@@ -718,8 +744,8 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   /* Create a default material */
   initMaterial(&material);
 
-  /* TODO(syoyo) Support line larger than 8191 */
-  while (NULL != fgets(linebuf, 8192 - 1, fp)) {
+  linebuf = (char*)TINYOBJ_MALLOC(buffer_size);
+  while (NULL != dynamic_fgets(&linebuf, &buffer_size, fp)) {
     const char *token = linebuf;
 
     line_end = token + strlen(token);
@@ -919,6 +945,10 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 
   (*num_materials_out) = num_materials;
   (*materials_out) = materials;
+
+  if (linebuf) {
+    TINYOBJ_FREE(linebuf);
+  }
 
   return TINYOBJ_SUCCESS;
 }
