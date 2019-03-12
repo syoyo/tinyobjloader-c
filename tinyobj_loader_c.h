@@ -1,7 +1,7 @@
 /*
    The MIT License (MIT)
 
-   Copyright (c) 2016 Syoyo Fujita and many contributors.
+   Copyright (c) 2016 - 2019 Syoyo Fujita and many contributors.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -396,24 +396,32 @@ static int tryParseDouble(const char *s, const char *s_end, double *result) {
       read++;
       end_not_reached = (curr != s_end);
     }
-    exponent *= (exp_sign == '+' ? 1 : -1);
     if (read == 0) goto fail;
   }
 
 assemble :
 
   {
-    /* = pow(5.0, exponent); */
-    double a = 1.0;
+    double a = 1.0; /* = pow(5.0, exponent); */
+    double b  = 1.0; /* = 2.0^exponent */
     int i;
     for (i = 0; i < exponent; i++) {
       a = a * 5.0;
     }
+
+    for (i = 0; i < exponent; i++) {
+      b = b * 2.0;
+    }
+
+    if (exp_sign == '-') {
+      a = 1.0 / a;
+      b = 1.0 / b;
+    }
+
     *result =
       /* (sign == '+' ? 1 : -1) * ldexp(mantissa * pow(5.0, exponent),
          exponent); */
-      (sign == '+' ? 1 : -1) * (mantissa * a) *
-      (double)(1 << exponent); /* 5.0^exponent * 2^exponent */
+      (sign == '+' ? 1 : -1) * (mantissa * a * b);
   }
 
   return 1;
@@ -458,7 +466,7 @@ static char *my_strdup(const char *s, size_t max_length) {
   /* trim line ending and append '\0' */
   d = (char *)TINYOBJ_MALLOC(len + 1); /* + '\0' */
   memcpy(d, s, (size_t)(len));
-  d[len+1] = '\0';
+  d[len] = '\0';
 
   return d;
 }

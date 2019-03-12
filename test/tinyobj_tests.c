@@ -33,6 +33,7 @@ TEST_LIST = {
     { "hash_table_maybe_grow",  test_hash_table_maybe_grow },
 
     { "crlf_string",  test_tinyobj_crlf_string },
+    { "negative_exponent_issue26",  test_tinyobj_negative_exponent },
 
     { 0 } // required by acutest
 };
