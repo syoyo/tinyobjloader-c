@@ -961,7 +961,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   return TINYOBJ_SUCCESS;
 }
 
-int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
+static int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                            size_t *num_materials_out,
                            const char *filename) {
   return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, filename, NULL);
@@ -1202,7 +1202,7 @@ static int is_line_ending(const char *p, size_t i, size_t end_i) {
   return 0;
 }
 
-int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
+static int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                       size_t *num_shapes, tinyobj_material_t **materials_out,
                       size_t *num_materials_out, const char *buf, size_t len,
                       unsigned int flags) {
@@ -1524,7 +1524,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
   return TINYOBJ_SUCCESS;
 }
 
-void tinyobj_attrib_init(tinyobj_attrib_t *attrib) {
+static void tinyobj_attrib_init(tinyobj_attrib_t *attrib) {
   attrib->vertices = NULL;
   attrib->num_vertices = 0;
   attrib->normals = NULL;
@@ -1538,7 +1538,7 @@ void tinyobj_attrib_init(tinyobj_attrib_t *attrib) {
   attrib->material_ids = NULL;
 }
 
-void tinyobj_attrib_free(tinyobj_attrib_t *attrib) {
+static void tinyobj_attrib_free(tinyobj_attrib_t *attrib) {
   if (attrib->vertices) TINYOBJ_FREE(attrib->vertices);
   if (attrib->normals) TINYOBJ_FREE(attrib->normals);
   if (attrib->texcoords) TINYOBJ_FREE(attrib->texcoords);
@@ -1547,7 +1547,7 @@ void tinyobj_attrib_free(tinyobj_attrib_t *attrib) {
   if (attrib->material_ids) TINYOBJ_FREE(attrib->material_ids);
 }
 
-void tinyobj_shapes_free(tinyobj_shape_t *shapes, size_t num_shapes) {
+static void tinyobj_shapes_free(tinyobj_shape_t *shapes, size_t num_shapes) {
   size_t i;
   if (shapes == NULL) return;
 
@@ -1558,7 +1558,7 @@ void tinyobj_shapes_free(tinyobj_shape_t *shapes, size_t num_shapes) {
   TINYOBJ_FREE(shapes);
 }
 
-void tinyobj_materials_free(tinyobj_material_t *materials,
+static void tinyobj_materials_free(tinyobj_material_t *materials,
                             size_t num_materials) {
   size_t i;
   if (materials == NULL) return;
