@@ -397,6 +397,16 @@ void test_tryParseDouble(void)
     }
 
     {
+	// leading zero in exponent
+        // Return value for string 1e06 should be true. Result should be double 1_000_000.
+        const char * test_string = "1e06";
+        double result;
+        int success = tryParseDouble(test_string, test_string + strlen(test_string), &result);
+        TEST_CHECK(success);
+        TEST_CHECK(result == 1000000.0);
+    }
+
+    {
         // Return value for string 1E6 should be true. Result should be double 1_000_000.
         const char * test_string = "1E6";
         double result;
@@ -424,13 +434,21 @@ void test_tryParseDouble(void)
     }
 
     {
-        // TODO: Negative exponents do not work.
-        // Return value for string 1e-3 should be true. Result should be double 0.001.
-        // const char * test_string = "1e-3";
-        // double result;
-        // int success = tryParseDouble(test_string, test_string + strlen(test_string), &result);
-        // TEST_CHECK(success);
-        // TEST_CHECK(result == 0.001);
+    	// Negative exponent
+        const char * test_string = "1e-3";
+        double result;
+        int success = tryParseDouble(test_string, test_string + strlen(test_string), &result);
+        TEST_CHECK(success);
+        TEST_CHECK(result == 0.001);
+    }
+
+    {
+    	// Negative exponent with leading zero
+        const char * test_string = "1e-03";
+        double result;
+        int success = tryParseDouble(test_string, test_string + strlen(test_string), &result);
+        TEST_CHECK(success);
+        TEST_CHECK(result == 0.001);
     }
 
     // Tests for exiting before end of the string.
