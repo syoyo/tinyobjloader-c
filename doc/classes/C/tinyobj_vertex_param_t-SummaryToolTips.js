@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:tinyobj_vertex_param_t",{30:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Parameter space vertex (vp) Specifies a point in the parameter space of a curve or surface.</div></div>",145:"<div class=\"NDToolTip TGroup LC\"><div class=\"TTSummary\">Polygonal and free-form geometry</div></div>"});

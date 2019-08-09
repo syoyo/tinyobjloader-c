@@ -1,0 +1,1 @@
+NDFramePage.OnPageTitleLoaded("CClass:tinyobj_line_t.s_line_vertex_index","s_line_vertex_index");NDSummary.OnSummaryLoaded("CClass:tinyobj_line_t.s_line_vertex_index",[["C/C++","C"]],[["Structs","Struct"]],[[26,0,0,"<span class=\"Qualifier\">tinyobj_line_t.</span>&#8203;s_line_vertex_index"]]);

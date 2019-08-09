@@ -1,0 +1,1 @@
+NDFramePage.OnPageTitleLoaded("CClass:tinyobj_line_t","tinyobj_line_t");NDSummary.OnSummaryLoaded("CClass:tinyobj_line_t",[["C/C++","C"]],[["Structs","Struct"]],[[33,0,0,"tinyobj_line_t"]]);

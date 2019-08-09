@@ -1,0 +1,1 @@
+NDContentPage.OnToolTipsLoaded({77:"<div class=\"NDToolTip TConstant LC\"><div class=\"TTSummary\">Invalid vertex index used when referencing vertices in couples/tuples</div></div>"});

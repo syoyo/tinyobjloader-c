@@ -1,0 +1,1 @@
+NDSearch.OnPrefixDataLoaded("mac",["Function"],[["macros",,[["COMPATtinyobj_attrib_t","String handling macros",,,0,"File:tinyobj_loader_c.h:COMPATtinyobj_attrib_t.String_handling_macros","CClass:COMPATtinyobj_attrib_t:String_handling_macros"]]]]);

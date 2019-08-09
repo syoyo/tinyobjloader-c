@@ -1,0 +1,1 @@
+NDFramePage.OnPageTitleLoaded("CClass:tinyobj_coefficient_t","tinyobj_coefficient_t");NDSummary.OnSummaryLoaded("CClass:tinyobj_coefficient_t",[["C/C++","C"]],[["Structs","Struct"]],[[36,0,0,"tinyobj_coefficient_t"]]);

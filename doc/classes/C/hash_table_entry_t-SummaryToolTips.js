@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:hash_table_entry_t",{74:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Entries used in tinyobj\'s own hash table implementation</div></div>"});

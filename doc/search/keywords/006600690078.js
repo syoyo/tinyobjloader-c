@@ -1,0 +1,1 @@
+NDSearch.OnPrefixDataLoaded("fix",["Function"],[["fixIndex",,[["COMPATtinyobj_attrib_t",,,,0,"File:tinyobj_loader_c.h:COMPATtinyobj_attrib_t.fixIndex","CClass:COMPATtinyobj_attrib_t:fixIndex"]]]]);

@@ -1,0 +1,1 @@
+NDFramePage.OnPageTitleLoaded("CClass:Command.s_group_information","s_group_information");NDSummary.OnSummaryLoaded("CClass:Command.s_group_information",[["C/C++","C"]],[["Structs","Struct"]],[[122,0,0,"<span class=\"Qualifier\">Command.</span>&#8203;s_group_information"]]);

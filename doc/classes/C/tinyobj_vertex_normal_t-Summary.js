@@ -1,0 +1,1 @@
+NDFramePage.OnPageTitleLoaded("CClass:tinyobj_vertex_normal_t","tinyobj_vertex_normal_t");NDSummary.OnSummaryLoaded("CClass:tinyobj_vertex_normal_t",[["C/C++","C"]],[["Structs","Struct"]],[[28,0,0,"tinyobj_vertex_normal_t"]]);

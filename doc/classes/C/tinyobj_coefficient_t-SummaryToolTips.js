@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:tinyobj_coefficient_t",{36:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">RGB Color coefficient information used in materials tinyobj_material_t</div></div>"});

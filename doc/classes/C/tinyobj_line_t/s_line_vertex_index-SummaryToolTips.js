@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:tinyobj_line_t.s_line_vertex_index",{26:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">List of couples</div></div>"});

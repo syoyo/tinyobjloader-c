@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:tinyobj_attrib_t",{37:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Object attributes .obj format</div></div>"});

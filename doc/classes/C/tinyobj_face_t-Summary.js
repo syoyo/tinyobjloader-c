@@ -1,0 +1,1 @@
+NDFramePage.OnPageTitleLoaded("CClass:tinyobj_face_t","tinyobj_face_t");NDSummary.OnSummaryLoaded("CClass:tinyobj_face_t",[["C/C++","C"]],[["Structs","Struct"]],[[35,0,0,"tinyobj_face_t"]]);

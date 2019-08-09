@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:Command.s_group_information",{122:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Grouping and Display/Render attributes</div></div>"});

@@ -1,0 +1,1 @@
+NDSearch.OnPrefixDataLoaded("ini",["Function"],[["initMaterial",,[["tinyobj_material_table_t",,,,0,"File:tinyobj_loader_c.h:tinyobj_material_table_t.initMaterial","CClass:tinyobj_material_table_t:initMaterial"]]]]);
