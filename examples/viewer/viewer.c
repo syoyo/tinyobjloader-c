@@ -1,5 +1,8 @@
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "../../tinyobj_loader_c.h"
+#ifndef TINYOBJ_ENABLE_OLDER_ATTRIBUTE
+#error Older attribute compatibility should be enabled to use this example
+#endif
 
 #include <GL/glew.h>
 
@@ -7,15 +10,15 @@
 #include <limits.h>
 #include <math.h>
 
-#ifdef _WIN64
+#if defined(_MSC_VER) || defined(_WIN64)
 #define atoll(S) _atoi64(S)
 #include <windows.h>
+#include <assert.h>
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <unistd.h>
 #endif
 
@@ -85,18 +88,24 @@ static void CalcNormal(float N[3], float v0[3], float v1[3], float v2[3]) {
 }
 
 static const char* mmap_file(size_t* len, const char* filename) {
-#ifdef _WIN64
+#if defined(_MSC_VER) || defined(_WIN64)
   HANDLE file =
       CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+  HANDLE fileMapping;
+  LPVOID fileMapView;
   assert(file != INVALID_HANDLE_VALUE);
 
-  HANDLE fileMapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
+  fileMapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
   assert(fileMapping != INVALID_HANDLE_VALUE);
 
-  LPVOID fileMapView = MapViewOfFile(fileMapping, FILE_MAP_READ, 0, 0, 0);
-  auto fileMapViewChar = (const char*)fileMapView;
-  assert(fileMapView != NULL);
+  fileMapView = MapViewOfFile(fileMapping, FILE_MAP_READ, 0, 0, 0);
+  {
+    auto fileMapViewChar = (const char*)fileMapView;
+    assert(fileMapView != NULL);
+	(*len) = GetFileSize(file, NULL);
+	return fileMapViewChar;
+  }
 #else
 
   FILE* f;
@@ -166,7 +175,8 @@ static const char* get_file_data(size_t* len, const char* filename) {
 
 static int LoadObjAndConvert(float bmin[3], float bmax[3],
                              const char* filename) {
-  tinyobj_attrib_t attrib;
+  COMPATtinyobj_attrib_t attrib;
+  tinyobj_attrib_t new_attrib;
   tinyobj_shape_t* shapes = NULL;
   size_t num_shapes;
   tinyobj_material_t* materials = NULL;
@@ -182,7 +192,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
 
   {
     unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
-    int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
+    int ret = tinyobj_parse_obj(&new_attrib, &shapes, &num_shapes, &materials,
                                 &num_materials, data, data_len, flags);
     if (ret != TINYOBJ_SUCCESS) {
       return 0;
@@ -190,7 +200,8 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
 
     printf("# of shapes    = %d\n", (int)num_shapes);
     printf("# of materials = %d\n", (int)num_materials);
-
+	if(tinyobj_new2old(&new_attrib, &attrib) != TINYOBJ_SUCCESS)
+		exit(-1);
     /*
     {
       int i;
@@ -334,9 +345,10 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
   printf("bmax = %f, %f, %f\n", (double)bmax[0], (double)bmax[1],
          (double)bmax[2]);
 
-  tinyobj_attrib_free(&attrib);
-  tinyobj_shapes_free(shapes, num_shapes);
-  tinyobj_materials_free(materials, num_materials);
+  tinyobj_attrib_free(&new_attrib);
+  tinyobj_attrib_free_compat(&attrib);
+  tinyobj_shape_free(shapes, num_shapes);
+  tinyobj_material_free(materials, num_materials);
 
   return 1;
 }
