@@ -73,8 +73,8 @@ void test_tinyobj_negative_exponent(void)
         tinyobj_material_t * material = NULL;
         tinyobj_attrib_t attrib;
 
-        unsigned long num_shapes;
-        unsigned long num_materials;
+        unsigned int num_shapes;
+        unsigned int num_materials;
 
         char * obj_contents;
         size_t file_size = loadFile_d(filename, &obj_contents);

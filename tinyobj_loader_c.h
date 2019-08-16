@@ -1106,7 +1106,7 @@ typedef struct s_hash_table_entry_t {
   int pad0;
   long value;
 
-  struct hash_table_entry_t *next;
+  struct s_hash_table_entry_t *next;
 } hash_table_entry_t;
 
 /* Structure: tinyobj_material_table_t
@@ -1477,7 +1477,7 @@ static void tinyobj_hash_init(tinyobj_material_table_t *table) {
 
 #endif  // TINYOBJ_USE_UTHASH
 /***********************************************************************************************
- * Group: Material handling (.mtl) 
+ * Group: Material handling (.mtl)
  ***********************************************************************************************/
 
 /* Function: initMaterial
