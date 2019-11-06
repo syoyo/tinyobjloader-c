@@ -1,7 +1,7 @@
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "../../tinyobj_loader_c.h"
 
-#include <GL/glew.h>
+#include "glad.h"
 
 #include <float.h>
 #include <limits.h>
@@ -28,7 +28,6 @@
 #include <GLFW/glfw3.h>
 
 #include "trackball.h"
-
 
 typedef struct {
   GLuint vb;
@@ -515,7 +514,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  glfwMakeContextCurrent(gWindow);
   glfwSwapInterval(1);
 
   glfwSetWindowSizeCallback(gWindow, reshapeFunc);
@@ -523,11 +521,13 @@ int main(int argc, char** argv) {
   glfwSetMouseButtonCallback(gWindow, clickFunc);
   glfwSetCursorPosCallback(gWindow, motionFunc);
 
-  /* glewExperimental = 1; */
-  if (glewInit() != GLEW_OK) {
-    fprintf(stderr, "Failed to initialize GLEW.\n");
-    return -1;
-  }
+  glfwMakeContextCurrent(gWindow);
+
+  if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+    fprintf(stderr, "Failed to initialize GLAD.\n");
+	return -1;
+    }
+
 
   reshapeFunc(gWindow, width, height);
 
