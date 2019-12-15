@@ -16,27 +16,31 @@ static int float_equals(float x, float y)
   return 0;
 }
 
-static size_t loadFile(const char * filename, char ** buffer)
-{
-    *buffer = NULL;
-    long string_size = 0, read_size = 0;
-    FILE * handler = fopen(filename, "r");
+size_t loadFile_d(const char *filename, char **buffer) {
+  long string_size = 0, read_size = 0;
+  FILE *handler = fopen(filename, "r");
+  *buffer = NULL;
 
-    if (handler) {
-        fseek(handler, 0, SEEK_END);
-        string_size = ftell(handler);
-        rewind(handler);
-        *buffer = (char *) malloc(sizeof(char) * (string_size + 1));
-        read_size = fread(*buffer, sizeof(char), (size_t) string_size, handler);
-        (*buffer)[string_size] = '\0';
-        if (string_size != read_size) {
-            free(buffer);
-            *buffer = NULL;
-        }
-        fclose(handler);
+  if (handler) {
+    if (fseek(handler, 0, SEEK_END) != 0) {
+      fprintf(stderr, "loadFile: fseek %s failure (errno %d)\n", filename,
+              errno);
+      return 0;
     }
-
-    return (size_t) read_size;
+    string_size = ftell(handler);
+    rewind(handler);
+    *buffer = (char *)malloc(sizeof(char) * (string_size + 1));
+    read_size = (long)fread(*buffer, sizeof(char), string_size, handler);
+    (*buffer)[string_size] = '\0';
+    if (string_size != read_size && errno) {
+      fprintf(stderr, "loadFile: fread %s failure (errno %d)\n", filename,
+              errno);
+      free(*buffer);
+      *buffer = NULL;
+    }
+    fclose(handler);
+  }
+  return (size_t)read_size;
 }
 
 void test_tinyobj_crlf_string(void)
@@ -45,9 +49,13 @@ void test_tinyobj_crlf_string(void)
         const char * filename = "fixtures/texname-crlf.mtl";
 
         tinyobj_material_t * material;
-        size_t num_materials;
+        unsigned int num_materials;
+        int ret;
 
-        TEST_CHECK(tinyobj_parse_mtl_file(&material, &num_materials, filename) == TINYOBJ_SUCCESS);
+		ret = tinyobj_parse_mtl_file(&material, &num_materials, filename);
+        TEST_CHECK(ret == TINYOBJ_SUCCESS);
+		if(ret != TINYOBJ_SUCCESS)
+			return;
 
         TEST_CHECK(num_materials == 1);
         TEST_CHECK(strcmp(material->name, "CubeMaterial") == 0);
@@ -68,21 +76,17 @@ void test_tinyobj_negative_exponent(void)
         unsigned long num_shapes;
         unsigned long num_materials;
 
-        tinyobj_attrib_init(&attrib);
-
         char * obj_contents;
-        size_t file_size = loadFile(filename, &obj_contents);
+        size_t file_size = loadFile_d(filename, &obj_contents);
 
         int result = tinyobj_parse_obj(&attrib, &shape, &num_shapes, &material, &num_materials, obj_contents, file_size, TINYOBJ_FLAG_TRIANGULATE);
 
         TEST_CHECK(result == TINYOBJ_SUCCESS);
+		if(result != TINYOBJ_SUCCESS)
+			return;
 
-        // TODO: should these two values be swapped?
-        TEST_CHECK(attrib.num_faces == 36);
-        TEST_CHECK(attrib.num_face_num_verts == 12);
-
-        TEST_CHECK(float_equals(attrib.vertices[0], 2.0e+5f));
-        TEST_CHECK(float_equals(attrib.vertices[1], 2.0e-5f));
-        TEST_CHECK(float_equals(attrib.vertices[2], 2.0e-0f));
+        TEST_CHECK(float_equals(attrib.v[0].x, 2.0e+5f));
+        TEST_CHECK(float_equals(attrib.v[0].y, 2.0e-5f));
+        TEST_CHECK(float_equals(attrib.v[0].z, 2.0e-0f));
     }
 }

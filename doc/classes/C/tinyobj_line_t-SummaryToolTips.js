@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:tinyobj_line_t",{33:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Line (l) Specifies a line and its vertex reference numbers</div></div>"});

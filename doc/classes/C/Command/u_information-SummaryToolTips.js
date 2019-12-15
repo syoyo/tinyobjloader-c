@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:Command.u_information",{85:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Specific command information</div></div>"});

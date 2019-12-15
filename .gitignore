@@ -2,3 +2,4 @@ examples/viewer/viewer
 test/tinyobj_tests
 *.dSYM
 *.o
+/nd_config/Working Data

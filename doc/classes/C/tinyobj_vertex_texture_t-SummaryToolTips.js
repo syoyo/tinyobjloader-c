@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:tinyobj_vertex_texture_t",{29:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Texture vertex (vt) Specifies a texture vertex and its coordinates</div></div>"});

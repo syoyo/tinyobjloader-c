@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:tinyobj_vertex_normal_t",{28:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Vertex normal (vn) Specifies a normal vector with components i, j, and k</div></div>"});

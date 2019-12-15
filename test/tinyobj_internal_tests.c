@@ -101,54 +101,48 @@ void test_length_until_newline(void)
         // Return value for null-terminated string without line breaks should be
         // number of non-null chars.
         char test_string[] = "potato";
-        TEST_CHECK(length_until_newline(test_string, sizeof(test_string)) == 6);
+        TEST_CHECK(length_until_newline_comment_space(
+                       test_string, sizeof(test_string)) == 6);
     }
 
     {
         // Return value for null terminated string with a linebreak at the end should
         // be number of chars to newline.
         char test_string[] = "potato\n";
-        TEST_CHECK(length_until_newline(test_string, sizeof(test_string)) == 6);
+        TEST_CHECK(length_until_newline_comment_space(
+                       test_string, sizeof(test_string)) == 6);
     }
 
     {
         // Return value for null-terminated string with a linebreak in the middle
         // should be number of chars to newline.
         char test_string[] = "potato\nmonkey";
-        TEST_CHECK(length_until_newline(test_string, sizeof(test_string)) == 6);
+        TEST_CHECK(length_until_newline_comment_space(
+                       test_string, sizeof(test_string)) == 6);
     }
 
     {
         // Return value for null-terminated string with a linebreak in the middle and
         // at the end should be number of chars to first newline.
         char test_string[] = "potato\nmonkey\n";
-        TEST_CHECK(length_until_newline(test_string, sizeof(test_string)) == 6);
+        TEST_CHECK(length_until_newline_comment_space(
+                       test_string, sizeof(test_string)) == 6);
     }
 
     {
         // Return value for empty null-terminated string should be 0.
         char test_string[] = "";
-        TEST_CHECK(length_until_newline(test_string, sizeof(test_string)) == 0);
+        TEST_CHECK(length_until_newline_comment_space(
+                       test_string, sizeof(test_string)) == 0);
     }
 
-    {
-        // Return value for null-terminated string with a null character in the middle
-        // should be the number of non-null chars plus the number of null characters
-        // before the end of the string.
-        char test_string[] = "pot\0ato";
-        TEST_CHECK(length_until_newline(test_string, sizeof(test_string)) == 7);
-    }
-}
-
-void test_my_atoi(void)
-{
-    // Results for input strings should become corresponding ints.
-    TEST_CHECK(my_atoi("1") == 1);
-    TEST_CHECK(my_atoi("-1") == -1);
-    TEST_CHECK(my_atoi("+1") == 1);
-    TEST_CHECK(my_atoi("0") == 0);
-    TEST_CHECK(my_atoi("-0") == 0);
-    TEST_CHECK(my_atoi("+0") == 0);
+//    {
+//        // Return value for null-terminated string with a null character in the middle
+//        // should be the number of non-null chars plus the number of null characters
+//        // before the end of the string.
+//        char test_string[] = "pot\0ato";
+//        TEST_CHECK(length_until_newline(test_string, sizeof(test_string)) == 7);
+//    }
 }
 
 void test_fix_index(void)
@@ -637,7 +631,7 @@ void test_my_strdup(void)
         // Return value for a regular string should be a new string whose
         // contents are equal to the original.
         char * test_string = "potato";
-        char * result = my_strdup(test_string, strlen(test_string));
+        char * result = strdup_ml(test_string, strlen(test_string));
         TEST_CHECK(test_string != result);
         TEST_CHECK(strcmp(test_string, result) == 0);
         free(result);
@@ -646,7 +640,7 @@ void test_my_strdup(void)
     {
         // Return value for empty string should be a new empty string.
         char * test_string = "";
-        char * result = my_strdup(test_string, strlen(test_string));
+        char* result = strdup_ml(test_string, strlen(test_string));
         TEST_CHECK(test_string != result);
         TEST_CHECK(strcmp(test_string, result) == 0);
         free(result);
@@ -659,7 +653,7 @@ void test_my_strndup(void)
         // Return value for a regular string and the length of that string should be a new
         // string whose contents are equal to the original.
         char * test_string = "potato";
-        char * result = my_strndup(test_string, 6);
+        char * result = strndup(test_string, 6);
         TEST_CHECK(test_string != result);
         TEST_CHECK(strcmp(test_string, result) == 0);
         free(result);
@@ -668,54 +662,28 @@ void test_my_strndup(void)
     {
         // Return value for a regular string and zero should be a new empty string.
         char * test_string = "potato";
-        char * result = my_strndup(test_string, 0);
+        char * result = strndup(test_string, 0);
         TEST_CHECK(result == 0);
     }
 }
 
-void test_initMaterial(void)
-{
-    // Initialised material should have expected defaults.
-    int i;
-    tinyobj_material_t material;
-    initMaterial(&material);
-    TEST_CHECK(material.name == NULL);
-    TEST_CHECK(material.ambient_texname == NULL);
-    TEST_CHECK(material.diffuse_texname == NULL);
-    TEST_CHECK(material.specular_texname == NULL);
-    TEST_CHECK(material.specular_highlight_texname == NULL);
-    TEST_CHECK(material.bump_texname == NULL);
-    TEST_CHECK(material.displacement_texname == NULL);
-    TEST_CHECK(material.alpha_texname == NULL);
-    for (i = 0; i < 3; i++) {
-        TEST_CHECK(material.ambient[i] == 0.f);
-        TEST_CHECK(material.diffuse[i] == 0.f);
-        TEST_CHECK(material.specular[i] == 0.f);
-        TEST_CHECK(material.transmittance[i] == 0.f);
-        TEST_CHECK(material.emission[i] == 0.f);
-    }
-    TEST_CHECK(material.illum == 0);
-    TEST_CHECK(material.dissolve == 1.f);
-    TEST_CHECK(material.shininess == 1.f);
-    TEST_CHECK(material.ior == 1.f);
-}
-
+#ifndef TINYOBJ_USE_UTHASH
 void test_create_hash_table(void)
 {
     {
         // Initialised hash table should be initialised with a default capacity.
-        hash_table_t table;
+        tinyobj_material_table_t table;
         create_hash_table(0, &table);
         TEST_CHECK(table.hashes != NULL);
         TEST_CHECK(table.entries != NULL);
-        TEST_CHECK(table.capacity == HASH_TABLE_DEFAULT_SIZE);
+        TEST_CHECK(table.capacity == TINYOBJ_HASH_TABLE_DEFAULT_SIZE);
         TEST_CHECK(table.n == 0);
         destroy_hash_table(&table);
     }
 
     {
         // Initialised hash table should be initialised with supplied capacity.
-        hash_table_t table;
+        tinyobj_material_table_t table;
         create_hash_table(20, &table);
         TEST_CHECK(table.hashes != NULL);
         TEST_CHECK(table.entries != NULL);
@@ -729,7 +697,7 @@ void test_hash_table_set(void)
 {
     {
         // Values should be stored in the hash table.
-        hash_table_t table;
+        tinyobj_material_table_t table;
         int foundFirst = 0;
         int foundSecond = 0;
         int foundOther = 0;
@@ -768,7 +736,7 @@ void test_hash_table_set(void)
     {
         // Values with different hashes but same % capacity value should exist in the
         // the same hash table.
-        hash_table_t table;
+        tinyobj_material_table_t table;
         int foundFirst = 0;
         int foundSecond = 0;
         int foundOther = 0;
@@ -812,7 +780,7 @@ void test_hash_table_set(void)
         // TODO: This fails. Should the key also be stored in the entry so it can be compared
         // with the key being inserted?
         // Values with identical hashes but different keys should exist in the same hash table.
-        hash_table_t table;
+        tinyobj_material_table_t table;
         int foundFirst = 0;
         int foundSecond = 0;
         int foundOther = 0;
@@ -855,7 +823,7 @@ void test_hash_table_set(void)
 void test_hash_table_exists(void)
 {
     // It should be possible to test for the presence of items in the hash table.
-    hash_table_t table;
+    tinyobj_material_table_t table;
     create_hash_table(20, &table);
 
     hash_table_set("potato", 3, &table);
@@ -871,7 +839,7 @@ void test_hash_table_exists(void)
 void test_hash_table_get(void)
 {
     // It should be possible to retrieve item values from the hash table.
-    hash_table_t table;
+    tinyobj_material_table_t table;
     create_hash_table(20, &table);
 
     hash_table_set("potato", 3, &table);
@@ -890,7 +858,7 @@ void test_hash_table_get(void)
 void test_hash_table_maybe_grow(void)
 {
     // It should be possible for the table to grow, preserving all previous values
-    hash_table_t table;
+    tinyobj_material_table_t table;
     create_hash_table(10, &table);
 
     hash_table_set("Pottery_clay0", 0, &table);
@@ -922,3 +890,5 @@ void test_hash_table_maybe_grow(void)
 
     destroy_hash_table(&table);
 }
+
+#endif // TINYOBJ_USE_UTHASH

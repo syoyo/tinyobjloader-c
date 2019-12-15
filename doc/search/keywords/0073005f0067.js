@@ -1,0 +1,1 @@
+NDSearch.OnPrefixDataLoaded("s_g",["Struct"],[["s_group_information",,[["Command",,,,0,"File:tinyobj_loader_c.h:Command.s_group_information","CClass:Command.s_group_information"]]]]);

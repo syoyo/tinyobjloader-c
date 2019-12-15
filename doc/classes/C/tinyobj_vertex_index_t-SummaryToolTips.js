@@ -1,0 +1,1 @@
+NDSummary.OnToolTipsLoaded("CClass:tinyobj_vertex_index_t",{31:"<div class=\"NDToolTip TStruct LC\"><div class=\"TTSummary\">Indices for each vertex type, used for triplets in faces See: tinyobj_face_t</div></div>"});

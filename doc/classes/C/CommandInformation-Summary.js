@@ -1,0 +1,1 @@
+NDFramePage.OnPageTitleLoaded("CClass:CommandInformation","CommandInformation");NDSummary.OnSummaryLoaded("CClass:CommandInformation",[["C/C++","C"]],[["Structs","Struct"]],[[119,0,0,"CommandInformation"]]);
