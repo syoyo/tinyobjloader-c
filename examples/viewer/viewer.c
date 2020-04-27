@@ -310,6 +310,8 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
           vb[(3 * i + k) * stride + 8] = (c[2] * 0.5f + 0.5f);
         }
       }
+      /* You can access per-face material through attrib.material_ids[i] */
+
       face_offset += (size_t)attrib.face_num_verts[i];
     }
 

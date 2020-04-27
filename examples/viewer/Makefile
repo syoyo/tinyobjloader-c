@@ -14,12 +14,16 @@ endif
 all: viewer
 
 viewer: viewer.o trackball.o glad.o
+	$(CC) -o $@ $? $(LDFLAGS)
 
 viewer.o: viewer.c ../../tinyobj_loader_c.h trackball.h glad.h
+	$(CC) -c -o $@ $(CFLAGS) $<
 
 trackball.o: trackball.c trackball.h
+	$(CC) -c -o $@ $(CFLAGS) $<
 
 glad.o: glad.c glad.h khrplatform.h
+	$(CC) -c -o $@ $(CFLAGS) $<
 
 clean:
 	@rm -rf viewer viewer.o trackball.o glad.o
