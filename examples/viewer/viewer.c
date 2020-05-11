@@ -182,7 +182,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
   {
     unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
     int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
-                                &num_materials, data, data_len, flags);
+                                &num_materials, data, data_len, filename, flags);
     if (ret != TINYOBJ_SUCCESS) {
       return 0;
     }

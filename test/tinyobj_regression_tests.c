@@ -47,7 +47,7 @@ void test_tinyobj_crlf_string(void)
         tinyobj_material_t * material;
         size_t num_materials;
 
-        TEST_CHECK(tinyobj_parse_mtl_file(&material, &num_materials, filename) == TINYOBJ_SUCCESS);
+        TEST_CHECK(tinyobj_parse_mtl_file(&material, &num_materials, filename, NULL) == TINYOBJ_SUCCESS);
 
         TEST_CHECK(num_materials == 1);
         TEST_CHECK(strcmp(material->name, "CubeMaterial") == 0);
@@ -73,7 +73,7 @@ void test_tinyobj_negative_exponent(void)
         char * obj_contents;
         size_t file_size = loadFile(filename, &obj_contents);
 
-        int result = tinyobj_parse_obj(&attrib, &shape, &num_shapes, &material, &num_materials, obj_contents, file_size, TINYOBJ_FLAG_TRIANGULATE);
+        int result = tinyobj_parse_obj(&attrib, &shape, &num_shapes, &material, &num_materials, obj_contents, file_size, NULL, TINYOBJ_FLAG_TRIANGULATE);
 
         TEST_CHECK(result == TINYOBJ_SUCCESS);
 

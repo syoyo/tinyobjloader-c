@@ -87,18 +87,40 @@ typedef struct {
 #define TINYOBJ_ERROR_INVALID_PARAMETER (-2)
 #define TINYOBJ_ERROR_FILE_OPERATION (-3)
 
-/* Parse wavefront .obj(.obj string data is expanded to linear char array `buf')
- * flags are combination of TINYOBJ_FLAG_***
+/* Parse wavefront .obj
+ *
+ * @param[out] attrib
+ * @param[out] shapes
+ * @param[out] num_shapes
+ * @param[out] materials
+ * @param[out] num_materials
+ * @param[in] buf Content of .obj text data
+ * @param[in] len Size of `buf`(strlen of `buf`)
+ * @param[in] .obj filename(Used to search .mtl file and error report)
+ * @param[in] flags Combination of TINYOBJ_FLAG_***
+
  * Returns TINYOBJ_SUCCESS if things goes well.
  * Returns TINYOBJ_ERR_*** when there is an error.
  */
 extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                              size_t *num_shapes, tinyobj_material_t **materials,
                              size_t *num_materials, const char *buf, size_t len,
+                             const char *obj_filename,
                              unsigned int flags);
+
+/* Parse wavefront .mtl
+ *
+ * @param[out] materials_out
+ * @param[out] num_materials_out
+ * @param[in] filename .mtl filename
+ * @param[in] seach_path Search path for .mtl file(Currently single search path string is supported)
+
+ * Returns TINYOBJ_SUCCESS if things goes well.
+ * Returns TINYOBJ_ERR_*** when there is an error.
+ */
 extern int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                                   size_t *num_materials_out,
-                                  const char *filename);
+                                  const char *filename, const char *search_path);
 
 extern void tinyobj_attrib_init(tinyobj_attrib_t *attrib);
 extern void tinyobj_attrib_free(tinyobj_attrib_t *attrib);
@@ -129,6 +151,7 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #endif
 
 #define TINYOBJ_MAX_FACES_PER_F_LINE (16)
+#define TINYOBJ_MAX_FILEPATH (8192)
 
 #define IS_SPACE(x) (((x) == ' ') || ((x) == '\t'))
 #define IS_DIGIT(x) ((unsigned int)((x) - '0') < (unsigned int)(10))
@@ -494,6 +517,32 @@ static char *my_strndup(const char *s, size_t len) {
   return d;
 }
 
+static char *my_joinpath(const char *s, const char *t, const char delim, size_t max_len) {
+  char *d;
+  size_t slen;
+  size_t tlen;
+  size_t len;
+
+  if ((s == NULL) && (t == NULL)) return NULL;
+  if (max_len == 0) return NULL;
+
+  slen = my_strnlen(s, max_len);
+  tlen = my_strnlen(t, max_len);
+  len = slen + tlen + 1; /* +1 for delimiter */
+
+  d = (char *)TINYOBJ_MALLOC(len + 1); /* + '\0' */
+  if (!d) {
+    return NULL;
+  }
+  memcpy(d, s, slen);
+  d[slen] = delim;
+  memcpy(d + slen +1, t, tlen);
+
+  d[len] = '\0';
+
+  return d;
+}
+
 char *dynamic_fgets(char **buf, size_t *size, FILE *file) {
   char *offset;
   char *ret;
@@ -544,7 +593,7 @@ static void initMaterial(tinyobj_material_t *material) {
 
 /* Implementation of string to int hashtable */
 
-#define HASH_TABLE_ERROR 1 
+#define HASH_TABLE_ERROR 1
 #define HASH_TABLE_SUCCESS 0
 
 #define HASH_TABLE_DEFAULT_SIZE 10
@@ -609,7 +658,7 @@ static int hash_table_insert_value(unsigned long hash, long value, hash_table_t*
   {
     if (i >= hash_table->capacity)
       return HASH_TABLE_ERROR;
-    index = (start_index + (i * i)) % hash_table->capacity; 
+    index = (start_index + (i * i)) % hash_table->capacity;
   }
 
   entry = hash_table->entries + index;
@@ -725,6 +774,7 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
 static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
                                             size_t *num_materials_out,
                                             const char *filename,
+                                            const char *search_path,
                                             hash_table_t* material_table) {
   tinyobj_material_t material;
   size_t buffer_size = 128;
@@ -748,8 +798,29 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 
   fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "TINYOBJ: Error reading file '%s': %s (%d)\n", filename, strerror(errno), errno);
-    return TINYOBJ_ERROR_FILE_OPERATION;
+    if (search_path) {
+      char *fullpath = my_joinpath(search_path, filename, '/', TINYOBJ_MAX_FILEPATH);
+
+      if (fullpath == NULL) {
+        /* ??? */
+        return TINYOBJ_ERROR_FILE_OPERATION;
+      }
+
+      fp = fopen(fullpath, "r");
+      if (!fp) {
+
+        fprintf(stderr, "TINYOBJ: Error reading file '%s'(search path = '%s'): %s (%d)\n", filename, search_path, strerror(errno), errno);
+
+        TINYOBJ_FREE(fullpath);
+
+        return TINYOBJ_ERROR_FILE_OPERATION;
+
+      }
+
+    } else {
+      fprintf(stderr, "TINYOBJ: Error reading file '%s': %s (%d)\n", filename, strerror(errno), errno);
+      return TINYOBJ_ERROR_FILE_OPERATION;
+    }
   }
 
   /* Create a default material */
@@ -966,9 +1037,9 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 
 int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                            size_t *num_materials_out,
-                           const char *filename) {
-  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, filename, NULL);
-} 
+                           const char *filename, const char *search_path) {
+  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, filename, search_path, NULL);
+}
 
 
 typedef enum {
@@ -1205,9 +1276,34 @@ static int is_line_ending(const char *p, size_t i, size_t end_i) {
   return 0;
 }
 
+/* `path` content will be modified
+ * TODO(syoyo): Support windows delimiter '\\'
+ */
+static char *get_dirname(char *path)
+{
+  char *last_delim = NULL;
+
+  if (path == NULL) {
+    return path;
+  }
+
+  last_delim = strrchr(path, '/');
+
+  if (last_delim == NULL) {
+    /* no delimiter in the string. */
+    return path;
+  }
+
+  /* remove '/' */
+  last_delim[0] = '\0';
+
+  return path;
+}
+
 int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                       size_t *num_shapes, tinyobj_material_t **materials_out,
                       size_t *num_materials_out, const char *buf, size_t len,
+                      const char *obj_filename,
                       unsigned int flags) {
   LineInfo *line_infos = NULL;
   Command *commands = NULL;
@@ -1277,7 +1373,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     }
   }
 
-  commands = (Command *)TINYOBJ_MALLOC(sizeof(Command) * num_lines); 
+  commands = (Command *)TINYOBJ_MALLOC(sizeof(Command) * num_lines);
 
   create_hash_table(HASH_TABLE_DEFAULT_SIZE, &material_table);
 
@@ -1314,10 +1410,24 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
   /* Load material(if exits) */
   if (mtllib_line_index >= 0 && commands[mtllib_line_index].mtllib_name &&
       commands[mtllib_line_index].mtllib_name_len > 0) {
-    char *filename = my_strndup(commands[mtllib_line_index].mtllib_name,
+
+    /* Extract .obj filepath. */
+    char *search_path = NULL;
+    char *filename = NULL;
+    int ret;
+
+    /* Simply find last delimiter `/`
+     * TODO(syoyo): Robust extraction of base directory of filename.
+     */
+    if (obj_filename) {
+      char *basedir = my_strdup(obj_filename, my_strnlen(obj_filename, TINYOBJ_MAX_FILEPATH));
+      search_path = get_dirname(basedir);
+    }
+
+    filename = my_strndup(commands[mtllib_line_index].mtllib_name,
                                 commands[mtllib_line_index].mtllib_name_len);
 
-    int ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, &material_table);
+    ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, search_path, &material_table);
 
     if (ret != TINYOBJ_SUCCESS) {
       /* warning. */
@@ -1325,6 +1435,9 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     }
 
     TINYOBJ_FREE(filename);
+    if (search_path) {
+      TINYOBJ_FREE(search_path);
+    }
 
   }
 
@@ -1371,7 +1484,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
         }
         */
         if (commands[i].material_name &&
-           commands[i].material_name_len >0) 
+           commands[i].material_name_len >0)
         {
           /* Create a null terminated string */
           char* material_name_null_term = (char*) TINYOBJ_MALLOC(commands[i].material_name_len + 1);
@@ -1520,7 +1633,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
   }
 
   destroy_hash_table(&material_table);
-  
+
   (*materials_out) = materials;
   (*num_materials_out) = num_materials;
 

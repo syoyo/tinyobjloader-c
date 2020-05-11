@@ -16,7 +16,7 @@ all: viewer
 viewer: viewer.o trackball.o glad.o
 	$(CC) -o $@ $? $(LDFLAGS)
 
-viewer.o: viewer.c ../../tinyobj_loader_c.h trackball.h glad.h
+viewer.o: viewer.c ../../tinyobj_loader_c.h
 	$(CC) -c -o $@ $(CFLAGS) $<
 
 trackball.o: trackball.c trackball.h
