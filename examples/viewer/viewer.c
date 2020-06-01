@@ -83,7 +83,7 @@ static void CalcNormal(float N[3], float v0[3], float v1[3], float v2[3]) {
   }
 }
 
-static const char* mmap_file(size_t* len, const char* filename) {
+static char* mmap_file(size_t* len, const char* filename) {
 #ifdef _WIN64
   HANDLE file =
       CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
@@ -107,6 +107,11 @@ static const char* mmap_file(size_t* len, const char* filename) {
   (*len) = 0;
 
   f = fopen(filename, "r");
+  if (!f)
+  {
+    perror("open");
+    return NULL;
+  }
   fseek(f, 0, SEEK_END);
   file_size = ftell(f);
   fclose(f);
@@ -146,21 +151,19 @@ static const char* mmap_file(size_t* len, const char* filename) {
 #endif
 }
 
-static const char* get_file_data(size_t* len, const char* filename) {
+static void get_file_data(const char* filename, char** data, size_t* len) {
   const char* ext = strrchr(filename, '.');
 
   size_t data_len = 0;
-  const char* data = NULL;
 
   if (strcmp(ext, ".gz") == 0) {
     assert(0); /* todo */
 
   } else {
-    data = mmap_file(&data_len, filename);
+    *data = mmap_file(&data_len, filename);
   }
 
   (*len) = data_len;
-  return data;
 }
 
 static int LoadObjAndConvert(float bmin[3], float bmax[3],
@@ -171,18 +174,10 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
   tinyobj_material_t* materials = NULL;
   size_t num_materials;
 
-  size_t data_len = 0;
-  const char* data = get_file_data(&data_len, filename);
-  if (data == NULL) {
-    exit(-1);
-    /* return 0; */
-  }
-  printf("filesize: %d\n", (int)data_len);
-
   {
     unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
     int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
-                                &num_materials, data, data_len, flags);
+                                &num_materials, filename, get_file_data, flags);
     if (ret != TINYOBJ_SUCCESS) {
       return 0;
     }
