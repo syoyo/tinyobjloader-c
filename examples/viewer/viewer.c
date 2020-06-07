@@ -151,7 +151,7 @@ static char* mmap_file(size_t* len, const char* filename) {
 #endif
 }
 
-static void get_file_data(const char* filename, char** data, size_t* len) {
+static int get_file_data(const char* filename, int is_mtl, char** data, size_t* len, void *userdata) {
   const char* ext = strrchr(filename, '.');
 
   size_t data_len = 0;
@@ -160,10 +160,18 @@ static void get_file_data(const char* filename, char** data, size_t* len) {
     assert(0); /* todo */
 
   } else {
+    if (is_mtl) {
+      if (userdata) {
+        /* TODO(syoyo): */
+        /* Probably you may want to append path to .obj */
+        /* const char *basedir = (const char *)(userdata); */
+      }
+    }
     *data = mmap_file(&data_len, filename);
   }
 
   (*len) = data_len;
+  return TINYOBJ_SUCCESS;
 }
 
 static int LoadObjAndConvert(float bmin[3], float bmax[3],
@@ -177,7 +185,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
   {
     unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
     int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
-                                &num_materials, filename, get_file_data, flags);
+                                &num_materials, filename, get_file_data, /* userdata */NULL,  flags);
     if (ret != TINYOBJ_SUCCESS) {
       return 0;
     }

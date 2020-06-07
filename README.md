@@ -8,6 +8,8 @@ If you are looking for C++ version, please see https://github.com/syoyo/tinyobjl
 
 Experimental. Loading geometry data would be OK, More testing required for materials and shapes.
 
+API may change in the future.
+
 ## Features
 
 * Single file, header only 
@@ -26,6 +28,8 @@ Copy `tinyobj_loader_c.h` to your project.
 /* define TINYOBJ_LOADER_C_IMPLEMENTATION for only *one* .c */
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "tinyobj_loader_c.h"
+
+// You need to provide file reader callback
 
 ...
 

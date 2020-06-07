@@ -22,8 +22,12 @@ void test_tinyobj_attrib_init(void)
     TEST_CHECK(attrib.material_ids == NULL);
 }
 
-void loadFile(const char * filename, char ** buffer, size_t * len)
+int loadFile(const char * filename, int is_mtl, char ** buffer, size_t * len, void *userdata)
 {
+    // TODO(syoyo): Use `userdata` to pass .mtl search path to this callback function.
+    (void)userdata;
+    (void)is_mtl;
+
     long string_size = 0, read_size = 0;
     FILE * handler = fopen(filename, "r");
 
@@ -39,9 +43,12 @@ void loadFile(const char * filename, char ** buffer, size_t * len)
             *buffer = NULL;
         }
         fclose(handler);
+    } else {
+        return TINYOBJ_ERROR_FILE_OPERATION;
     }
 
     *len = read_size;
+    return TINYOBJ_SUCCESS; 
 }
 
 void test_tinyobj_parse_mtl_file(void)
@@ -52,7 +59,9 @@ void test_tinyobj_parse_mtl_file(void)
         tinyobj_material_t * material;
         size_t num_materials;
 
-        TEST_CHECK(tinyobj_parse_mtl_file(&material, &num_materials, filename, loadFile) == TINYOBJ_SUCCESS);
+        void *userdata = NULL;
+
+        TEST_CHECK(tinyobj_parse_mtl_file(&material, &num_materials, filename, loadFile, userdata) == TINYOBJ_SUCCESS);
 
         TEST_CHECK(num_materials == 1);
         TEST_CHECK(strcmp(material->name, "CubeMaterial") == 0);
@@ -91,7 +100,7 @@ void test_tinyobj_parse_obj(void)
 
     tinyobj_attrib_init(&attrib);
 
-    int result = tinyobj_parse_obj(&attrib, &shape, &num_shapes, &material, &num_materials, filename, loadFile, TINYOBJ_FLAG_TRIANGULATE);
+    int result = tinyobj_parse_obj(&attrib, &shape, &num_shapes, &material, &num_materials, filename, loadFile, /* userdata */NULL, TINYOBJ_FLAG_TRIANGULATE);
 
     TEST_CHECK(result == TINYOBJ_SUCCESS);
 
