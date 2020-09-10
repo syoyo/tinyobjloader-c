@@ -88,14 +88,22 @@ static char* mmap_file(size_t* len, const char* filename) {
   HANDLE file =
       CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-  assert(file != INVALID_HANDLE_VALUE);
+
+  if (file == INVALID_HANDLE_VALUE) { /* E.g. Model may not have materials. */
+    return NULL;
+  }
 
   HANDLE fileMapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
   assert(fileMapping != INVALID_HANDLE_VALUE);
 
   LPVOID fileMapView = MapViewOfFile(fileMapping, FILE_MAP_READ, 0, 0, 0);
-  auto fileMapViewChar = (const char*)fileMapView;
+  char* fileMapViewChar = (char*)fileMapView;
   assert(fileMapView != NULL);
+
+  DWORD file_size = GetFileSize(file, NULL);
+  (*len) = (size_t) file_size;
+
+  return fileMapViewChar;
 #else
 
   FILE* f;
