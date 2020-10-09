@@ -22,9 +22,8 @@ void test_tinyobj_attrib_init(void)
     TEST_CHECK(attrib.material_ids == NULL);
 }
 
-size_t loadFile(const char * filename, char ** buffer)
+void loadFile(const char * filename, const int is_mtl, const char *obj_filename, char ** buffer, size_t * len)
 {
-    *buffer = NULL;
     long string_size = 0, read_size = 0;
     FILE * handler = fopen(filename, "r");
 
@@ -42,7 +41,7 @@ size_t loadFile(const char * filename, char ** buffer)
         fclose(handler);
     }
 
-    return (size_t) read_size;
+    *len = read_size;
 }
 
 void test_tinyobj_parse_mtl_file(void)
@@ -54,42 +53,7 @@ void test_tinyobj_parse_mtl_file(void)
         size_t num_materials;
         const char *search_path = NULL;
 
-        TEST_CHECK(tinyobj_parse_mtl_file(&material, &num_materials, filename, search_path) == TINYOBJ_SUCCESS);
-
-        TEST_CHECK(num_materials == 1);
-        TEST_CHECK(strcmp(material->name, "CubeMaterial") == 0);
-
-        TEST_CHECK(material->diffuse[0] == 1.0);
-        TEST_CHECK(material->diffuse[1] == 0.0);
-        TEST_CHECK(material->diffuse[2] == 0.0);
-
-        TEST_CHECK(material->specular[0] == 0.5);
-        TEST_CHECK(material->specular[1] == 0.25);
-        TEST_CHECK(material->specular[2] == 0.125);
-
-        TEST_CHECK(material->ambient[0] == 1.0);
-        TEST_CHECK(material->ambient[1] == 1.0);
-        TEST_CHECK(material->ambient[2] == 1.0);
-
-        TEST_CHECK(material->emission[0] == 0.0);
-        TEST_CHECK(material->emission[1] == 1.0);
-        TEST_CHECK(material->emission[2] == 0.0);
-
-        TEST_CHECK(material->illum == 2);
-        TEST_CHECK(material->dissolve == 1.0);
-    }
-}
-
-void test_tinyobj_parse_mtl_file_with_searchpath(void)
-{
-    {
-        const char * filename = "cube.mtl";
-        const char * search_path = "fixtures";
-
-        tinyobj_material_t * material;
-        size_t num_materials;
-
-        TEST_CHECK(tinyobj_parse_mtl_file(&material, &num_materials, filename, search_path) == TINYOBJ_SUCCESS);
+        TEST_CHECK(tinyobj_parse_mtl_file(&material, &num_materials, filename, /* obj filename */NULL, loadFile) == TINYOBJ_SUCCESS);
 
         TEST_CHECK(num_materials == 1);
         TEST_CHECK(strcmp(material->name, "CubeMaterial") == 0);
@@ -129,10 +93,7 @@ void test_tinyobj_parse_obj(void)
 
     tinyobj_attrib_init(&attrib);
 
-    char * obj_contents;
-    size_t file_size = loadFile(filename, &obj_contents);
-
-    int result = tinyobj_parse_obj(&attrib, &shape, &num_shapes, &material, &num_materials, obj_contents, file_size, search_path, TINYOBJ_FLAG_TRIANGULATE);
+    int result = tinyobj_parse_obj(&attrib, &shape, &num_shapes, &material, &num_materials, filename, loadFile, TINYOBJ_FLAG_TRIANGULATE);
 
     TEST_CHECK(result == TINYOBJ_SUCCESS);
 

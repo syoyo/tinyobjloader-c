@@ -8,7 +8,6 @@ TEST_LIST = {
     // API Tests
     { "tinyobj_attrib_init",    test_tinyobj_attrib_init },
     { "tinyobj_parse_mtl_file", test_tinyobj_parse_mtl_file },
-    { "tinyobj_parse_mtl_file_with_searchpath", test_tinyobj_parse_mtl_file_with_searchpath },
     { "tinyobj_parse_obj",      test_tinyobj_parse_obj },
 
     // Implementation Tests

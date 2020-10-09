@@ -1,3 +1,6 @@
+#include <string.h>
+#include <memory.h>
+
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
 #include "../../tinyobj_loader_c.h"
 
@@ -83,19 +86,27 @@ static void CalcNormal(float N[3], float v0[3], float v1[3], float v2[3]) {
   }
 }
 
-static const char* mmap_file(size_t* len, const char* filename) {
+static char* mmap_file(size_t* len, const char* filename) {
 #ifdef _WIN64
   HANDLE file =
       CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-  assert(file != INVALID_HANDLE_VALUE);
+
+  if (file == INVALID_HANDLE_VALUE) { /* E.g. Model may not have materials. */
+    return NULL;
+  }
 
   HANDLE fileMapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
   assert(fileMapping != INVALID_HANDLE_VALUE);
 
   LPVOID fileMapView = MapViewOfFile(fileMapping, FILE_MAP_READ, 0, 0, 0);
-  auto fileMapViewChar = (const char*)fileMapView;
+  char* fileMapViewChar = (char*)fileMapView;
   assert(fileMapView != NULL);
+
+  DWORD file_size = GetFileSize(file, NULL);
+  (*len) = (size_t) file_size;
+
+  return fileMapViewChar;
 #else
 
   FILE* f;
@@ -107,6 +118,11 @@ static const char* mmap_file(size_t* len, const char* filename) {
   (*len) = 0;
 
   f = fopen(filename, "r");
+  if (!f)
+  {
+    perror("open");
+    return NULL;
+  }
   fseek(f, 0, SEEK_END);
   file_size = ftell(f);
   fclose(f);
@@ -146,21 +162,87 @@ static const char* mmap_file(size_t* len, const char* filename) {
 #endif
 }
 
-static const char* get_file_data(size_t* len, const char* filename) {
+/* path will be modified */
+static char *get_dirname(char *path)
+{
+  char *last_delim = NULL;
+
+  if (path == NULL) {
+    return path;
+  }
+
+#if defined(_WIN32)
+  /* TODO: Unix style path */
+  last_delim = strrchr(path, '\\');
+#else
+  last_delim = strrchr(path, '/');
+#endif
+
+  if (last_delim == NULL) {
+    /* no delimiter in the string. */
+    return path;
+  }
+
+  /* remove '/' */
+  last_delim[0] = '\0';
+
+  return path;
+}
+
+static void get_file_data(const char* filename, const int is_mtl, const char *obj_filename, char** data, size_t* len) {
+  if (!filename) {
+    fprintf(stderr, "null filename\n");
+    (*data) = NULL;
+    (*len) = NULL;
+  }
+
   const char* ext = strrchr(filename, '.');
 
   size_t data_len = 0;
-  const char* data = NULL;
 
   if (strcmp(ext, ".gz") == 0) {
     assert(0); /* todo */
 
   } else {
-    data = mmap_file(&data_len, filename);
+
+    char *basedirname = NULL;
+
+    char tmp[1024];
+    tmp[0] = '\0';
+
+    /* For .mtl, extract base directory path from .obj filename and append .mtl filename */
+    if (is_mtl && obj_filename) {
+      /* my_strdup is from tinyobjloader-c.h implementation(since strdup is not a C standard library function */
+      basedirname = my_strdup(obj_filename, strlen(obj_filename));
+      basedirname = get_dirname(basedirname);
+      printf("basedirname = %s\n", basedirname);
+    }
+
+    if (basedirname) {
+      strncpy(tmp, basedirname, strlen(basedirname));
+
+#if defined(_WIN32)
+      strncat(tmp, "/", 1023 - strlen(tmp));
+#else
+      strncat(tmp, "/", 1023 - strlen(tmp));
+#endif
+      strncat(tmp, filename, 1023 - strlen(tmp));
+      tmp[strlen(tmp)] = '\0';
+    } else {
+      strncpy(tmp, filename, strlen(filename));
+      tmp[strlen(tmp)] = '\0';
+    }
+
+    printf("tmp = %s\n", tmp);
+
+    if (basedirname) {
+      free(basedirname);
+    }
+
+    *data = mmap_file(&data_len, tmp);
   }
 
   (*len) = data_len;
-  return data;
 }
 
 static int LoadObjAndConvert(float bmin[3], float bmax[3],
@@ -171,18 +253,10 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
   tinyobj_material_t* materials = NULL;
   size_t num_materials;
 
-  size_t data_len = 0;
-  const char* data = get_file_data(&data_len, filename);
-  if (data == NULL) {
-    exit(-1);
-    /* return 0; */
-  }
-  printf("filesize: %d\n", (int)data_len);
-
   {
     unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
     int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
-                                &num_materials, data, data_len, filename, flags);
+                                &num_materials, filename, get_file_data, flags);
     if (ret != TINYOBJ_SUCCESS) {
       return 0;
     }

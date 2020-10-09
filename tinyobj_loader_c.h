@@ -87,25 +87,35 @@ typedef struct {
 #define TINYOBJ_ERROR_INVALID_PARAMETER (-2)
 #define TINYOBJ_ERROR_FILE_OPERATION (-3)
 
-/* Parse wavefront .obj
+/* Provide a callback that can read text file without any parsing or modification.
+ * The obj and mtl parser is going to read all the necessary data:
+ * tinyobj_parse_obj
+ * tinyobj_parse_mtl_file
  *
- * @param[out] attrib
- * @param[out] shapes
- * @param[out] num_shapes
- * @param[out] materials
- * @param[out] num_materials
- * @param[in] buf Content of .obj text data
- * @param[in] len Size of `buf`(strlen of `buf`)
- * @param[in] .obj filename(Used to search .mtl file and error report)
- * @param[in] flags Combination of TINYOBJ_FLAG_***
+ * @param[in] filename Filename to be loaded.
+ * @param[in] is_mtl 1 when the callback is invoked for loading .mtl. 0 for .obj
+ * @param[in] obj_filename .obj filename. Useful when you load .mtl from same location of .obj. When the callback is called to load .obj, `filename` and `obj_filename` are same.
+ * @param[out] buf Content of loaded file
+ * @param[out] len Size of content(file)
+ */
+typedef void (*file_reader_callback)(const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len);
 
+/* Parse wavefront .obj
+ * @param[out] attrib Attibutes
+ * @param[out] shapes Array of parsed shapes
+ * @param[out] num_shapes Array length of `shapes`
+ * @param[out] materials Array of parsed materials
+ * @param[out] num_materials Array length of `materials`
+ * @param[in] file_name File name of .obj
+ * @param[in] file_reader File reader callback function(to read .obj and .mtl).
+ * @param[in] flags combination of TINYOBJ_FLAG_***
+ *
  * Returns TINYOBJ_SUCCESS if things goes well.
  * Returns TINYOBJ_ERR_*** when there is an error.
  */
 extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                              size_t *num_shapes, tinyobj_material_t **materials,
-                             size_t *num_materials, const char *buf, size_t len,
-                             const char *obj_filename,
+                             size_t *num_materials, const char *file_name, file_reader_callback file_reader,
                              unsigned int flags);
 
 /* Parse wavefront .mtl
@@ -113,14 +123,15 @@ extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
  * @param[out] materials_out
  * @param[out] num_materials_out
  * @param[in] filename .mtl filename
- * @param[in] seach_path Search path for .mtl file(Currently single search path string is supported)
+ * @param[in] filename of .obj filename. could be NULL if you just want to parse .mtl file.
+ * @param[in] file_reader File reader callback
 
  * Returns TINYOBJ_SUCCESS if things goes well.
  * Returns TINYOBJ_ERR_*** when there is an error.
  */
 extern int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                                   size_t *num_materials_out,
-                                  const char *filename, const char *search_path);
+                                  const char *filename, const char *obj_filename, file_reader_callback file_reader);
 
 extern void tinyobj_attrib_init(tinyobj_attrib_t *attrib);
 extern void tinyobj_attrib_free(tinyobj_attrib_t *attrib);
@@ -771,19 +782,81 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
   return dst;
 }
 
+static int is_line_ending(const char *p, size_t i, size_t end_i) {
+  if (p[i] == '\0') return 1;
+  if (p[i] == '\n') return 1; /* this includes \r\n */
+  if (p[i] == '\r') {
+    if (((i + 1) < end_i) && (p[i + 1] != '\n')) { /* detect only \r case */
+      return 1;
+    }
+  }
+  return 0;
+}
+
+typedef struct {
+  size_t pos;
+  size_t len;
+} LineInfo;
+
+/* Find '\n' and create line data. */
+static int get_line_infos(const char *buf, size_t buf_len, LineInfo **line_infos, size_t *num_lines)
+{
+  size_t i = 0;
+  size_t end_idx = buf_len;
+  size_t prev_pos = 0;
+  size_t line_no = 0;
+  size_t last_line_ending = 0;
+
+  /* Count # of lines. */
+  for (i = 0; i < end_idx; i++) {
+    if (is_line_ending(buf, i, end_idx)) {
+      (*num_lines)++;
+      last_line_ending = i;
+    }
+  }
+  /* The last char from the input may not be a line
+    * ending character so add an extra line if there
+    * are more characters after the last line ending
+    * that was found. */
+  if (end_idx - last_line_ending > 0) {
+      (*num_lines)++;
+  }
+
+  if (*num_lines == 0) return TINYOBJ_ERROR_EMPTY;
+
+  *line_infos = (LineInfo *)TINYOBJ_MALLOC(sizeof(LineInfo) * (*num_lines));
+
+  /* Fill line infos. */
+  for (i = 0; i < end_idx; i++) {
+    if (is_line_ending(buf, i, end_idx)) {
+      (*line_infos)[line_no].pos = prev_pos;
+      (*line_infos)[line_no].len = i - prev_pos;
+      prev_pos = i + 1;
+      line_no++;
+    }
+  }
+  if (end_idx - last_line_ending > 0) {
+    (*line_infos)[line_no].pos = prev_pos;
+    (*line_infos)[line_no].len = end_idx - 1 - last_line_ending;
+  }
+
+  return 0;
+}
+
 static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
                                             size_t *num_materials_out,
-                                            const char *filename,
-                                            const char *search_path,
+                                            const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader,
                                             hash_table_t* material_table) {
   tinyobj_material_t material;
-  size_t buffer_size = 128;
-  char *linebuf;
-  FILE *fp;
   size_t num_materials = 0;
   tinyobj_material_t *materials = NULL;
   int has_previous_material = 0;
   const char *line_end = NULL;
+  size_t num_lines = 0;
+  LineInfo *line_infos = NULL;
+  size_t i = 0;
+  char *buf = NULL;
+  size_t len = 0;
 
   if (materials_out == NULL) {
     return TINYOBJ_ERROR_INVALID_PARAMETER;
@@ -796,41 +869,30 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   (*materials_out) = NULL;
   (*num_materials_out) = 0;
 
-  fp = fopen(filename, "r");
-  if (!fp) {
-    if (search_path) {
-      char *fullpath = my_joinpath(search_path, filename, '/', TINYOBJ_MAX_FILEPATH);
+  file_reader(mtl_filename, 1, obj_filename, &buf, &len);
+  if (len < 1) return TINYOBJ_ERROR_INVALID_PARAMETER;
+  if (buf == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
 
-      if (fullpath == NULL) {
-        /* ??? */
-        return TINYOBJ_ERROR_FILE_OPERATION;
-      }
-
-      fp = fopen(fullpath, "r");
-      if (!fp) {
-
-        fprintf(stderr, "TINYOBJ: Error reading file '%s'(search path = '%s'): %s (%d)\n", filename, search_path, strerror(errno), errno);
-
-        TINYOBJ_FREE(fullpath);
-
-        return TINYOBJ_ERROR_FILE_OPERATION;
-
-      }
-
-    } else {
-      fprintf(stderr, "TINYOBJ: Error reading file '%s': %s (%d)\n", filename, strerror(errno), errno);
-      return TINYOBJ_ERROR_FILE_OPERATION;
-    }
+  if (get_line_infos(buf, len, &line_infos, &num_lines) != 0) {
+    return TINYOBJ_ERROR_EMPTY;
   }
 
   /* Create a default material */
   initMaterial(&material);
 
-  linebuf = (char*)TINYOBJ_MALLOC(buffer_size);
-  while (NULL != dynamic_fgets(&linebuf, &buffer_size, fp)) {
-    const char *token = linebuf;
+  for (i = 0; i < num_lines; i++) {
+    const char *p = &buf[line_infos[i].pos];
+    size_t p_len = line_infos[i].len;
 
-    line_end = token + strlen(token);
+    char linebuf[4096];
+    const char *token;
+    assert(p_len < 4095);
+
+    memcpy(linebuf, p, p_len);
+    linebuf[p_len] = '\0';
+
+    token = linebuf;
+    line_end = token + p_len;
 
     /* Skip leading space. */
     token += strspn(token, " \t");
@@ -1028,17 +1090,13 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   (*num_materials_out) = num_materials;
   (*materials_out) = materials;
 
-  if (linebuf) {
-    TINYOBJ_FREE(linebuf);
-  }
-
   return TINYOBJ_SUCCESS;
 }
 
 int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                            size_t *num_materials_out,
-                           const char *filename, const char *search_path) {
-  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, filename, search_path, NULL);
+                           const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader) {
+  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, mtl_filename, obj_filename, file_reader, NULL);
 }
 
 
@@ -1260,24 +1318,8 @@ static int parseLine(Command *command, const char *p, size_t p_len,
   return 0;
 }
 
-typedef struct {
-  size_t pos;
-  size_t len;
-} LineInfo;
-
-static int is_line_ending(const char *p, size_t i, size_t end_i) {
-  if (p[i] == '\0') return 1;
-  if (p[i] == '\n') return 1; /* this includes \r\n */
-  if (p[i] == '\r') {
-    if (((i + 1) < end_i) && (p[i + 1] != '\n')) { /* detect only \r case */
-      return 1;
-    }
-  }
-  return 0;
-}
-
+#if 0
 /* `path` content will be modified
- * TODO(syoyo): Support windows delimiter '\\'
  */
 static char *get_dirname(char *path)
 {
@@ -1287,7 +1329,11 @@ static char *get_dirname(char *path)
     return path;
   }
 
+#if defined(_WIN32)
+  last_delim = strrchr(path, '\\');
+#else
   last_delim = strrchr(path, '/');
+#endif
 
   if (last_delim == NULL) {
     /* no delimiter in the string. */
@@ -1299,11 +1345,12 @@ static char *get_dirname(char *path)
 
   return path;
 }
+#endif
+
 
 int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                       size_t *num_shapes, tinyobj_material_t **materials_out,
-                      size_t *num_materials_out, const char *buf, size_t len,
-                      const char *obj_filename,
+                      size_t *num_materials_out, const char *obj_filename, file_reader_callback file_reader,
                       unsigned int flags) {
   LineInfo *line_infos = NULL;
   Command *commands = NULL;
@@ -1322,6 +1369,10 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
   hash_table_t material_table;
 
+  char *buf = NULL;
+  size_t len = 0;
+  file_reader(obj_filename, /* is_mtl */0, obj_filename, &buf, &len);
+
   if (len < 1) return TINYOBJ_ERROR_INVALID_PARAMETER;
   if (attrib == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
   if (shapes == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
@@ -1331,46 +1382,10 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
   if (num_materials_out == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
 
   tinyobj_attrib_init(attrib);
-   /* 1. Find '\n' and create line data. */
-  {
-    size_t i;
-    size_t end_idx = len;
-    size_t prev_pos = 0;
-    size_t line_no = 0;
-    size_t last_line_ending = 0;
 
-    /* Count # of lines. */
-    for (i = 0; i < end_idx; i++) {
-      if (is_line_ending(buf, i, end_idx)) {
-        num_lines++;
-        last_line_ending = i;
-      }
-    }
-    /* The last char from the input may not be a line
-     * ending character so add an extra line if there
-     * are more characters after the last line ending
-     * that was found. */
-    if (end_idx - last_line_ending > 0) {
-        num_lines++;
-    }
-
-    if (num_lines == 0) return TINYOBJ_ERROR_EMPTY;
-
-    line_infos = (LineInfo *)TINYOBJ_MALLOC(sizeof(LineInfo) * num_lines);
-
-    /* Fill line infos. */
-    for (i = 0; i < end_idx; i++) {
-      if (is_line_ending(buf, i, end_idx)) {
-        line_infos[line_no].pos = prev_pos;
-        line_infos[line_no].len = i - prev_pos;
-        prev_pos = i + 1;
-        line_no++;
-      }
-    }
-    if (end_idx - last_line_ending > 0) {
-      line_infos[line_no].pos = prev_pos;
-      line_infos[line_no].len = end_idx - 1 - last_line_ending;
-    }
+  /* 1. create line data */
+  if (get_line_infos(buf, len, &line_infos, &num_lines) != 0) {
+    return TINYOBJ_ERROR_EMPTY;
   }
 
   commands = (Command *)TINYOBJ_MALLOC(sizeof(Command) * num_lines);
@@ -1412,22 +1427,24 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
       commands[mtllib_line_index].mtllib_name_len > 0) {
 
     /* Extract .obj filepath. */
-    char *search_path = NULL;
+    /*char *search_path = NULL; */
     char *filename = NULL;
     int ret;
 
+#if 0
     /* Simply find last delimiter `/`
      * TODO(syoyo): Robust extraction of base directory of filename.
      */
     if (obj_filename) {
-      char *basedir = my_strdup(obj_filename, my_strnlen(obj_filename, TINYOBJ_MAX_FILEPATH));
+      char *basedir = my_strdup(file_name, my_strnlen(file_name, TINYOBJ_MAX_FILEPATH));
       search_path = get_dirname(basedir);
     }
+#endif
 
     filename = my_strndup(commands[mtllib_line_index].mtllib_name,
                                 commands[mtllib_line_index].mtllib_name_len);
 
-    ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, search_path, &material_table);
+    ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, obj_filename, file_reader, &material_table);
 
     if (ret != TINYOBJ_SUCCESS) {
       /* warning. */
@@ -1435,9 +1452,11 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     }
 
     TINYOBJ_FREE(filename);
+#if 0
     if (search_path) {
       TINYOBJ_FREE(search_path);
     }
+#endif
 
   }
 
