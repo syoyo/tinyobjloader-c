@@ -193,7 +193,8 @@ static void get_file_data(const char* filename, const int is_mtl, const char *ob
   if (!filename) {
     fprintf(stderr, "null filename\n");
     (*data) = NULL;
-    (*len) = NULL;
+    (*len) = 0;
+    return;
   }
 
   const char* ext = strrchr(filename, '.');
