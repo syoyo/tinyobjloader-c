@@ -92,13 +92,14 @@ typedef struct {
  * tinyobj_parse_obj
  * tinyobj_parse_mtl_file
  *
+ * @param[in] ctx User provided context.
  * @param[in] filename Filename to be loaded.
  * @param[in] is_mtl 1 when the callback is invoked for loading .mtl. 0 for .obj
  * @param[in] obj_filename .obj filename. Useful when you load .mtl from same location of .obj. When the callback is called to load .obj, `filename` and `obj_filename` are same.
  * @param[out] buf Content of loaded file
  * @param[out] len Size of content(file)
  */
-typedef void (*file_reader_callback)(const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len);
+typedef void (*file_reader_callback)(void *ctx, const char *filename, int is_mtl, const char *obj_filename, char **buf, size_t *len);
 
 /* Parse wavefront .obj
  * @param[out] attrib Attibutes
@@ -108,6 +109,7 @@ typedef void (*file_reader_callback)(const char *filename, int is_mtl, const cha
  * @param[out] num_materials Array length of `materials`
  * @param[in] file_name File name of .obj
  * @param[in] file_reader File reader callback function(to read .obj and .mtl).
+ * @param[in] ctx Context pointer passed to the file_reader_callback.
  * @param[in] flags combination of TINYOBJ_FLAG_***
  *
  * Returns TINYOBJ_SUCCESS if things goes well.
@@ -116,7 +118,7 @@ typedef void (*file_reader_callback)(const char *filename, int is_mtl, const cha
 extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                              size_t *num_shapes, tinyobj_material_t **materials,
                              size_t *num_materials, const char *file_name, file_reader_callback file_reader,
-                             unsigned int flags);
+                             void *ctx, unsigned int flags);
 
 /* Parse wavefront .mtl
  *
@@ -125,13 +127,15 @@ extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
  * @param[in] filename .mtl filename
  * @param[in] filename of .obj filename. could be NULL if you just want to parse .mtl file.
  * @param[in] file_reader File reader callback
+ * @param[in[ ctx Context pointer passed to the file_reader callack.
 
  * Returns TINYOBJ_SUCCESS if things goes well.
  * Returns TINYOBJ_ERR_*** when there is an error.
  */
 extern int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                                   size_t *num_materials_out,
-                                  const char *filename, const char *obj_filename, file_reader_callback file_reader);
+                                  const char *filename, const char *obj_filename, file_reader_callback file_reader,
+				  void *ctx);
 
 extern void tinyobj_attrib_init(tinyobj_attrib_t *attrib);
 extern void tinyobj_attrib_free(tinyobj_attrib_t *attrib);
@@ -845,7 +849,7 @@ static int get_line_infos(const char *buf, size_t buf_len, LineInfo **line_infos
 
 static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
                                             size_t *num_materials_out,
-                                            const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader,
+                                            const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader, void *ctx,
                                             hash_table_t* material_table) {
   tinyobj_material_t material;
   size_t num_materials = 0;
@@ -869,7 +873,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   (*materials_out) = NULL;
   (*num_materials_out) = 0;
 
-  file_reader(mtl_filename, 1, obj_filename, &buf, &len);
+  file_reader(ctx, mtl_filename, 1, obj_filename, &buf, &len);
   if (len < 1) return TINYOBJ_ERROR_INVALID_PARAMETER;
   if (buf == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
 
@@ -1095,8 +1099,9 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 
 int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                            size_t *num_materials_out,
-                           const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader) {
-  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, mtl_filename, obj_filename, file_reader, NULL);
+                           const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader,
+			   void *ctx) {
+  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, mtl_filename, obj_filename, file_reader, ctx, NULL);
 }
 
 
@@ -1350,7 +1355,8 @@ static char *get_dirname(char *path)
 
 int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                       size_t *num_shapes, tinyobj_material_t **materials_out,
-                      size_t *num_materials_out, const char *obj_filename, file_reader_callback file_reader,
+                      size_t *num_materials_out, const char *obj_filename,
+		      file_reader_callback file_reader, void *ctx,
                       unsigned int flags) {
   LineInfo *line_infos = NULL;
   Command *commands = NULL;
@@ -1371,7 +1377,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
   char *buf = NULL;
   size_t len = 0;
-  file_reader(obj_filename, /* is_mtl */0, obj_filename, &buf, &len);
+  file_reader(ctx, obj_filename, /* is_mtl */0, obj_filename, &buf, &len);
 
   if (len < 1) return TINYOBJ_ERROR_INVALID_PARAMETER;
   if (attrib == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
@@ -1444,7 +1450,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     filename = my_strndup(commands[mtllib_line_index].mtllib_name,
                                 commands[mtllib_line_index].mtllib_name_len);
 
-    ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, obj_filename, file_reader, &material_table);
+    ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, obj_filename, file_reader, ctx, &material_table);
 
     if (ret != TINYOBJ_SUCCESS) {
       /* warning. */

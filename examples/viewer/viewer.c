@@ -189,7 +189,7 @@ static char *get_dirname(char *path)
   return path;
 }
 
-static void get_file_data(const char* filename, const int is_mtl, const char *obj_filename, char** data, size_t* len) {
+static void get_file_data(void *ctx, const char* filename, const int is_mtl, const char *obj_filename, char** data, size_t* len) {
   if (!filename) {
     fprintf(stderr, "null filename\n");
     (*data) = NULL;
@@ -257,7 +257,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
   {
     unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
     int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
-                                &num_materials, filename, get_file_data, flags);
+                                &num_materials, filename, get_file_data, NULL, flags);
     if (ret != TINYOBJ_SUCCESS) {
       return 0;
     }
