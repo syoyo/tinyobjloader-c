@@ -1,14 +1,13 @@
-#include <string.h>
 #include <memory.h>
+#include <string.h>
 
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
-#include "../../tinyobj_loader_c.h"
-
-#include "glad.h"
-
 #include <float.h>
 #include <limits.h>
 #include <math.h>
+
+#include "../../tinyobj_loader_c.h"
+#include "glad.h"
 
 #ifdef _WIN64
 #define atoll(S) _atoi64(S)
@@ -18,7 +17,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <unistd.h>
 #endif
 
@@ -104,7 +102,7 @@ static char* mmap_file(size_t* len, const char* filename) {
   assert(fileMapView != NULL);
 
   DWORD file_size = GetFileSize(file, NULL);
-  (*len) = (size_t) file_size;
+  (*len) = (size_t)file_size;
 
   return fileMapViewChar;
 #else
@@ -118,8 +116,7 @@ static char* mmap_file(size_t* len, const char* filename) {
   (*len) = 0;
 
   f = fopen(filename, "r");
-  if (!f)
-  {
+  if (!f) {
     perror("open");
     return NULL;
   }
@@ -163,9 +160,8 @@ static char* mmap_file(size_t* len, const char* filename) {
 }
 
 /* path will be modified */
-static char *get_dirname(char *path)
-{
-  char *last_delim = NULL;
+static char* get_dirname(char* path) {
+  char* last_delim = NULL;
 
   if (path == NULL) {
     return path;
@@ -189,7 +185,15 @@ static char *get_dirname(char *path)
   return path;
 }
 
-static void get_file_data(void *ctx, const char* filename, const int is_mtl, const char *obj_filename, char** data, size_t* len) {
+static void get_file_data(void* ctx, const char* filename, const int is_mtl,
+                          const char* obj_filename, char** data, size_t* len) {
+  // NOTE: If you allocate the buffer with malloc(),
+  // You can define your own memory management struct and pass it through `ctx`
+  // to store the pointer and free memories at clean up stage(when you quit an
+  // app)
+  // This example uses mmap(), so no free() required.
+  (void)ctx;
+
   if (!filename) {
     fprintf(stderr, "null filename\n");
     (*data) = NULL;
@@ -205,15 +209,16 @@ static void get_file_data(void *ctx, const char* filename, const int is_mtl, con
     assert(0); /* todo */
 
   } else {
-
-    char *basedirname = NULL;
+    char* basedirname = NULL;
 
     char tmp[1024];
     tmp[0] = '\0';
 
-    /* For .mtl, extract base directory path from .obj filename and append .mtl filename */
+    /* For .mtl, extract base directory path from .obj filename and append .mtl
+     * filename */
     if (is_mtl && obj_filename) {
-      /* my_strdup is from tinyobjloader-c.h implementation(since strdup is not a C standard library function */
+      /* my_strdup is from tinyobjloader-c.h implementation(since strdup is not
+       * a C standard library function */
       basedirname = my_strdup(obj_filename, strlen(obj_filename));
       basedirname = get_dirname(basedirname);
       printf("basedirname = %s\n", basedirname);
@@ -256,8 +261,9 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
 
   {
     unsigned int flags = TINYOBJ_FLAG_TRIANGULATE;
-    int ret = tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
-                                &num_materials, filename, get_file_data, NULL, flags);
+    int ret =
+        tinyobj_parse_obj(&attrib, &shapes, &num_shapes, &materials,
+                          &num_materials, filename, get_file_data, NULL, flags);
     if (ret != TINYOBJ_SUCCESS) {
       return 0;
     }
@@ -395,8 +401,9 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
     if (num_triangles > 0) {
       glGenBuffers(1, &o.vb);
       glBindBuffer(GL_ARRAY_BUFFER, o.vb);
-      glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(num_triangles * 3 * stride * sizeof(float)),
-                   vb, GL_STATIC_DRAW);
+      glBufferData(GL_ARRAY_BUFFER,
+                   (GLsizeiptr)(num_triangles * 3 * stride * sizeof(float)), vb,
+                   GL_STATIC_DRAW);
       o.numTriangles = (int)num_triangles;
     }
 
@@ -600,11 +607,10 @@ int main(int argc, char** argv) {
 
   glfwMakeContextCurrent(gWindow);
 
-  if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     fprintf(stderr, "Failed to initialize GLAD.\n");
-	return -1;
-    }
-
+    return -1;
+  }
 
   reshapeFunc(gWindow, width, height);
 
