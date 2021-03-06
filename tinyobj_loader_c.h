@@ -532,32 +532,6 @@ static char *my_strndup(const char *s, size_t len) {
   return d;
 }
 
-static char *my_joinpath(const char *s, const char *t, const char delim, size_t max_len) {
-  char *d;
-  size_t slen;
-  size_t tlen;
-  size_t len;
-
-  if ((s == NULL) && (t == NULL)) return NULL;
-  if (max_len == 0) return NULL;
-
-  slen = my_strnlen(s, max_len);
-  tlen = my_strnlen(t, max_len);
-  len = slen + tlen + 1; /* +1 for delimiter */
-
-  d = (char *)TINYOBJ_MALLOC(len + 1); /* + '\0' */
-  if (!d) {
-    return NULL;
-  }
-  memcpy(d, s, slen);
-  d[slen] = delim;
-  memcpy(d + slen +1, t, tlen);
-
-  d[len] = '\0';
-
-  return d;
-}
-
 char *dynamic_fgets(char **buf, size_t *size, FILE *file) {
   char *offset;
   char *ret;
