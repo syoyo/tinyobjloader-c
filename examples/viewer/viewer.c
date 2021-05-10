@@ -225,7 +225,7 @@ static void get_file_data(void* ctx, const char* filename, const int is_mtl,
     }
 
     if (basedirname) {
-      strncpy(tmp, basedirname, strlen(basedirname));
+      strncpy(tmp, basedirname, strlen(basedirname) + 1);
 
 #if defined(_WIN32)
       strncat(tmp, "/", 1023 - strlen(tmp));
@@ -233,10 +233,8 @@ static void get_file_data(void* ctx, const char* filename, const int is_mtl,
       strncat(tmp, "/", 1023 - strlen(tmp));
 #endif
       strncat(tmp, filename, 1023 - strlen(tmp));
-      tmp[strlen(tmp)] = '\0';
     } else {
-      strncpy(tmp, filename, strlen(filename));
-      tmp[strlen(tmp)] = '\0';
+      strncpy(tmp, filename, strlen(filename) + 1);
     }
 
     printf("tmp = %s\n", tmp);
