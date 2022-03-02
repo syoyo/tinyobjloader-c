@@ -212,14 +212,7 @@ static void get_file_data(void* ctx, const char* filename, const int is_mtl,
     }
 
     if (basedirname) {
-      strncpy(tmp, basedirname, strlen(basedirname) + 1);
-
-#if defined(_WIN32)
-      strncat(tmp, "/", 1023 - strlen(tmp));
-#else
-      strncat(tmp, "/", 1023 - strlen(tmp));
-#endif
-      strncat(tmp, filename, 1023 - strlen(tmp));
+      snprintf(tmp, sizeof(tmp) - 1, "%s/%s", basedirname, filename);
     } else {
       strncpy(tmp, filename, strlen(filename) + 1);
     }
