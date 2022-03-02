@@ -107,22 +107,9 @@ static char* mmap_file(size_t* len, const char* filename) {
   return fileMapViewChar;
 #else
 
-  FILE* f;
-  long file_size;
   struct stat sb;
   char* p;
   int fd;
-
-  (*len) = 0;
-
-  f = fopen(filename, "r");
-  if (!f) {
-    perror("open");
-    return NULL;
-  }
-  fseek(f, 0, SEEK_END);
-  file_size = ftell(f);
-  fclose(f);
 
   fd = open(filename, O_RDONLY);
   if (fd == -1) {
@@ -136,11 +123,11 @@ static char* mmap_file(size_t* len, const char* filename) {
   }
 
   if (!S_ISREG(sb.st_mode)) {
-    fprintf(stderr, "%s is not a file\n", "lineitem.tbl");
+    fprintf(stderr, "%s is not a file\n", filename);
     return NULL;
   }
 
-  p = (char*)mmap(0, (size_t)file_size, PROT_READ, MAP_SHARED, fd, 0);
+  p = (char*)mmap(0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
   if (p == MAP_FAILED) {
     perror("mmap");
@@ -152,7 +139,7 @@ static char* mmap_file(size_t* len, const char* filename) {
     return NULL;
   }
 
-  (*len) = (size_t)file_size;
+  (*len) = sb.st_size;
 
   return p;
 
