@@ -380,9 +380,17 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
           vb[(3 * i + k) * stride + 8] = (c[2] * 0.5f + 0.5f);
 
 	  /* now set the color from the material */
-          vb[(3 * i + k) * stride + 9] = materials[attrib.material_ids[i]].diffuse[0];
-          vb[(3 * i + k) * stride + 10] = materials[attrib.material_ids[i]].diffuse[1];
-          vb[(3 * i + k) * stride + 11] = materials[attrib.material_ids[i]].diffuse[2];
+	  if (attrib.material_ids[i] >= 0) {
+	    int matidx = attrib.material_ids[i];
+	    vb[(3 * i + k) * stride + 9] = materials[matidx].diffuse[0];
+	    vb[(3 * i + k) * stride + 10] = materials[matidx].diffuse[1];
+	    vb[(3 * i + k) * stride + 11] = materials[matidx].diffuse[2];
+	  } else {
+	    /* Just copy the default value */
+	    vb[(3 * i + k) * stride + 9] = vb[(3 * i + k) * stride + 6];
+	    vb[(3 * i + k) * stride + 10] = vb[(3 * i + k) * stride + 7];
+	    vb[(3 * i + k) * stride + 11] = vb[(3 * i + k) * stride + 8];
+	  }
 
         }
       }
