@@ -44,7 +44,10 @@ static int height = 768;
 static bool use_colors = false;
 static bool draw_wireframe = true;
 
-static const size_t OBJ_SIZE = 48;
+static const size_t OBJ_SIZE = sizeof(float) * 3 // pos
+	+ sizeof(float) * 3 // normal
+	+ sizeof(float) * 3 // color (based on normal)
+	+ sizeof(float) * 3; // color from material file.
 
 static float prevMouseX, prevMouseY;
 static int mouseLeftPressed;
@@ -279,9 +282,9 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
     size_t num_triangles = attrib.num_face_num_verts;
     size_t stride =
         OBJ_SIZE /
-        sizeof(float); /* 12 = pos(3float), normal(3float), color(3float) */
+        sizeof(float);
 
-    vb = (float*)malloc(OBJ_SIZE * num_triangles);
+    vb = (float*)malloc(OBJ_SIZE * num_triangles * 3);
 
     for (i = 0; i < attrib.num_face_num_verts; i++) {
       size_t f;
