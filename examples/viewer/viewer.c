@@ -1,4 +1,5 @@
 #include <memory.h>
+#include <stdbool.h>
 #include <string.h>
 
 #define TINYOBJ_LOADER_C_IMPLEMENTATION
@@ -39,6 +40,14 @@ static DrawObject gDrawObject;
 
 static int width = 768;
 static int height = 768;
+
+static bool use_colors = false;
+static bool draw_wireframe = true;
+
+static const size_t OBJ_SIZE = sizeof(float) * 3 // pos
+	+ sizeof(float) * 3 // normal
+	+ sizeof(float) * 3 // color (based on normal)
+	+ sizeof(float) * 3; // color from material file.
 
 static float prevMouseX, prevMouseY;
 static int mouseLeftPressed;
@@ -107,22 +116,9 @@ static char* mmap_file(size_t* len, const char* filename) {
   return fileMapViewChar;
 #else
 
-  FILE* f;
-  long file_size;
   struct stat sb;
   char* p;
   int fd;
-
-  (*len) = 0;
-
-  f = fopen(filename, "r");
-  if (!f) {
-    perror("open");
-    return NULL;
-  }
-  fseek(f, 0, SEEK_END);
-  file_size = ftell(f);
-  fclose(f);
 
   fd = open(filename, O_RDONLY);
   if (fd == -1) {
@@ -136,11 +132,11 @@ static char* mmap_file(size_t* len, const char* filename) {
   }
 
   if (!S_ISREG(sb.st_mode)) {
-    fprintf(stderr, "%s is not a file\n", "lineitem.tbl");
+    fprintf(stderr, "%s is not a file\n", filename);
     return NULL;
   }
 
-  p = (char*)mmap(0, (size_t)file_size, PROT_READ, MAP_SHARED, fd, 0);
+  p = (char*)mmap(0, sb.st_size, PROT_READ, MAP_SHARED, fd, 0);
 
   if (p == MAP_FAILED) {
     perror("mmap");
@@ -152,7 +148,7 @@ static char* mmap_file(size_t* len, const char* filename) {
     return NULL;
   }
 
-  (*len) = (size_t)file_size;
+  (*len) = sb.st_size;
 
   return p;
 
@@ -225,14 +221,7 @@ static void get_file_data(void* ctx, const char* filename, const int is_mtl,
     }
 
     if (basedirname) {
-      strncpy(tmp, basedirname, strlen(basedirname) + 1);
-
-#if defined(_WIN32)
-      strncat(tmp, "/", 1023 - strlen(tmp));
-#else
-      strncat(tmp, "/", 1023 - strlen(tmp));
-#endif
-      strncat(tmp, filename, 1023 - strlen(tmp));
+      snprintf(tmp, sizeof(tmp) - 1, "%s/%s", basedirname, filename);
     } else {
       strncpy(tmp, filename, strlen(filename) + 1);
     }
@@ -291,9 +280,11 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
 
     /* Assume triangulated face. */
     size_t num_triangles = attrib.num_face_num_verts;
-    size_t stride = 9; /* 9 = pos(3float), normal(3float), color(3float) */
+    size_t stride =
+        OBJ_SIZE /
+        sizeof(float);
 
-    vb = (float*)malloc(sizeof(float) * stride * num_triangles * 3);
+    vb = (float*)malloc(OBJ_SIZE * num_triangles * 3);
 
     for (i = 0; i < attrib.num_face_num_verts; i++) {
       size_t f;
@@ -371,7 +362,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
           vb[(3 * i + k) * stride + 4] = n[k][1];
           vb[(3 * i + k) * stride + 5] = n[k][2];
 
-          /* Use normal as color. */
+          /* Set the normal as alternate color */
           c[0] = n[k][0];
           c[1] = n[k][1];
           c[2] = n[k][2];
@@ -387,6 +378,20 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
           vb[(3 * i + k) * stride + 6] = (c[0] * 0.5f + 0.5f);
           vb[(3 * i + k) * stride + 7] = (c[1] * 0.5f + 0.5f);
           vb[(3 * i + k) * stride + 8] = (c[2] * 0.5f + 0.5f);
+
+	  /* now set the color from the material */
+	  if (attrib.material_ids[i] >= 0) {
+	    int matidx = attrib.material_ids[i];
+	    vb[(3 * i + k) * stride + 9] = materials[matidx].diffuse[0];
+	    vb[(3 * i + k) * stride + 10] = materials[matidx].diffuse[1];
+	    vb[(3 * i + k) * stride + 11] = materials[matidx].diffuse[2];
+	  } else {
+	    /* Just copy the default value */
+	    vb[(3 * i + k) * stride + 9] = vb[(3 * i + k) * stride + 6];
+	    vb[(3 * i + k) * stride + 10] = vb[(3 * i + k) * stride + 7];
+	    vb[(3 * i + k) * stride + 11] = vb[(3 * i + k) * stride + 8];
+	  }
+
         }
       }
       /* You can access per-face material through attrib.material_ids[i] */
@@ -461,6 +466,8 @@ static void keyboardFunc(GLFWwindow* window, int key, int scancode, int action,
 
     if (key == GLFW_KEY_Q || key == GLFW_KEY_ESCAPE)
       glfwSetWindowShouldClose(window, GL_TRUE);
+    if (key == GLFW_KEY_C) use_colors = !use_colors;
+    if (key == GLFW_KEY_W) draw_wireframe = !draw_wireframe;
   }
 }
 
@@ -530,10 +537,13 @@ static void Draw(const DrawObject* draw_object) {
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 36, (const void*)0);
-    glNormalPointer(GL_FLOAT, 36, (const void*)(sizeof(float) * 3));
-    glColorPointer(3, GL_FLOAT, 36, (const void*)(sizeof(float) * 6));
-
+    glVertexPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)0);
+    glNormalPointer(GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 3));
+    if (use_colors) {
+      glColorPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 9));
+    } else {
+      glColorPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 6));
+    }
     glDrawArrays(GL_TRIANGLES, 0, 3 * draw_object->numTriangles);
     CheckErrors("drawarrays");
   }
@@ -545,13 +555,13 @@ static void Draw(const DrawObject* draw_object) {
 
   glColor3f(0.0f, 0.0f, 0.4f);
 
-  if (draw_object->vb >= 1) {
+  if (draw_object->vb >= 1 && draw_wireframe) {
     glBindBuffer(GL_ARRAY_BUFFER, draw_object->vb);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 36, (const void*)0);
-    glNormalPointer(GL_FLOAT, 36, (const void*)(sizeof(float) * 3));
+    glVertexPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)0);
+    glNormalPointer(GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 3));
 
     glDrawArrays(GL_TRIANGLES, 0, 3 * draw_object->numTriangles);
     CheckErrors("drawarrays");
