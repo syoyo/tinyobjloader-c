@@ -1302,16 +1302,32 @@ static size_t basename_len(const char *filename, size_t filename_length) {
   const char *p = &filename[filename_length - 1];
   size_t count = 1;
 
-  while (*(--p) != '/') {
-    if (p == filename) {
-	  count = filename_length;
-	  return count;
+  /* On Windows, the directory delimiter is '\' and both it and '/' is
+   * reserved by the filesystem. On *nix platforms, only the '/' character 
+   * is reserved, so account for the two cases separately. */
+  #if _WIN32
+    while (p[-1] != '/' && p[-1] != '\\') {
+      if (p == filename) {
+	    count = filename_length;
+	    return count;
+      }
+      count++;
+	  p--;
     }
-    count++;
-
-  }
-
-  return count;
+	p++;
+    return count;
+  #else
+    while (*(--p) != '/') {
+      if (p == filename) {
+	    count = filename_length;
+	    return count;
+      }
+      count++;
+    }
+    return count;
+  #endif
+  
+ 
 }
 
 static char *generate_mtl_filename(const char *obj_filename,
