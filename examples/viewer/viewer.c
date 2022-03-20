@@ -197,44 +197,9 @@ static void get_file_data(void* ctx, const char* filename, const int is_mtl,
     return;
   }
 
-  const char* ext = strrchr(filename, '.');
-
   size_t data_len = 0;
 
-  if (strcmp(ext, ".gz") == 0) {
-    assert(0); /* todo */
-
-  } else {
-    char* basedirname = NULL;
-
-    char tmp[1024];
-    tmp[0] = '\0';
-
-    /* For .mtl, extract base directory path from .obj filename and append .mtl
-     * filename */
-    if (is_mtl && obj_filename) {
-      /* my_strdup is from tinyobjloader-c.h implementation(since strdup is not
-       * a C standard library function */
-      basedirname = my_strdup(obj_filename, strlen(obj_filename));
-      basedirname = get_dirname(basedirname);
-      printf("basedirname = %s\n", basedirname);
-    }
-
-    if (basedirname) {
-      snprintf(tmp, sizeof(tmp) - 1, "%s/%s", basedirname, filename);
-    } else {
-      strncpy(tmp, filename, strlen(filename) + 1);
-    }
-
-    printf("tmp = %s\n", tmp);
-
-    if (basedirname) {
-      free(basedirname);
-    }
-
-    *data = mmap_file(&data_len, tmp);
-  }
-
+  *data = mmap_file(&data_len, filename);
   (*len) = data_len;
 }
 

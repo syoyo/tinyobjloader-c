@@ -1,10 +1,7 @@
 # Blender v2.79 (sub 0) OBJ File: ''
 # www.blender.org
 
-# TODO: this should not be a relative path, but is being opened by the process
-# running in the parent folder.
-# See discussion from https://github.com/syoyo/tinyobjloader-c/issues/4#issuecomment-289190334
-mtllib fixtures/cube.mtl
+mtllib cube.mtl
 
 o Cube
 v 2.0e+5 2.0e-5 2.0e-0
