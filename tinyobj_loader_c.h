@@ -1074,7 +1074,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                            size_t *num_materials_out,
                            const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader,
-			   void *ctx) {
+                           void *ctx) {
   return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, mtl_filename, obj_filename, file_reader, ctx, NULL);
 }
 
@@ -1298,7 +1298,7 @@ static int parseLine(Command *command, const char *p, size_t p_len,
 }
 
 static size_t basename_len(const char *filename, size_t filename_length) {
-  	/* Count includes NUL terminator. */
+  /* Count includes NUL terminator. */
   const char *p = &filename[filename_length - 1];
   size_t count = 1;
 
@@ -1308,32 +1308,30 @@ static size_t basename_len(const char *filename, size_t filename_length) {
   #if _WIN32
     while (p[-1] != '/' && p[-1] != '\\') {
       if (p == filename) {
-	    count = filename_length;
-	    return count;
+        count = filename_length;
+        return count;
       }
       count++;
-	  p--;
+      p--;
     }
-	p++;
+    p++;
     return count;
   #else
     while (*(--p) != '/') {
       if (p == filename) {
-	    count = filename_length;
-	    return count;
+        count = filename_length;
+        return count;
       }
       count++;
     }
     return count;
   #endif
-  
- 
 }
 
 static char *generate_mtl_filename(const char *obj_filename,
-								   size_t obj_filename_length,
-								   const char *mtllib_name,
-								   size_t mtllib_name_length) {
+                                   size_t obj_filename_length,
+                                   const char *mtllib_name,
+                                   size_t mtllib_name_length) {
   /* Create a dynamically-allocated material filename. This allows the material
    * and obj files to be separated, however the mtllib name in the OBJ file
    * must be a relative path to the material file from the OBJ's directory.
@@ -1360,7 +1358,7 @@ static char *generate_mtl_filename(const char *obj_filename,
 int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                       size_t *num_shapes, tinyobj_material_t **materials_out,
                       size_t *num_materials_out, const char *obj_filename,
-		      file_reader_callback file_reader, void *ctx,
+                      file_reader_callback file_reader, void *ctx,
                       unsigned int flags) {
   LineInfo *line_infos = NULL;
   Command *commands = NULL;
@@ -1437,25 +1435,25 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
       commands[mtllib_line_index].mtllib_name_len > 0) {
     /* Maximum length allowed by Linux - higher than Windows and macOS */
     size_t obj_filename_len = my_strnlen(obj_filename, 4096 + 255) + 1;
-	char *mtl_filename;
+    char *mtl_filename;
     char *mtllib_name;
     size_t mtllib_name_len = 0;
     int ret;
-		
+
     mtllib_name_len = length_until_line_feed(commands[mtllib_line_index].mtllib_name,
                                              commands[mtllib_line_index].mtllib_name_len);
-	  
+
     mtllib_name = my_strndup(commands[mtllib_line_index].mtllib_name,
                              mtllib_name_len);
-	
+
     /* allow for NUL terminator */
     mtllib_name_len++;
     mtl_filename = generate_mtl_filename(obj_filename, obj_filename_len,
                                          mtllib_name, mtllib_name_len);
-	  
+
     ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials,
                                            mtl_filename, obj_filename,
-	                                       file_reader, ctx,
+                                           file_reader, ctx,
                                            &material_table);
 
     if (ret != TINYOBJ_SUCCESS) {
