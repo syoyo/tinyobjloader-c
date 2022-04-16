@@ -1074,7 +1074,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                            size_t *num_materials_out,
                            const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader,
-			   void *ctx) {
+                           void *ctx) {
   return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, mtl_filename, obj_filename, file_reader, ctx, NULL);
 }
 
@@ -1297,40 +1297,68 @@ static int parseLine(Command *command, const char *p, size_t p_len,
   return 0;
 }
 
-#if 0
-/* `path` content will be modified
- */
-static char *get_dirname(char *path)
-{
-  char *last_delim = NULL;
+static size_t basename_len(const char *filename, size_t filename_length) {
+  /* Count includes NUL terminator. */
+  const char *p = &filename[filename_length - 1];
+  size_t count = 1;
 
-  if (path == NULL) {
-    return path;
-  }
-
-#if defined(_WIN32)
-  last_delim = strrchr(path, '\\');
-#else
-  last_delim = strrchr(path, '/');
-#endif
-
-  if (last_delim == NULL) {
-    /* no delimiter in the string. */
-    return path;
-  }
-
-  /* remove '/' */
-  last_delim[0] = '\0';
-
-  return path;
+  /* On Windows, the directory delimiter is '\' and both it and '/' is
+   * reserved by the filesystem. On *nix platforms, only the '/' character 
+   * is reserved, so account for the two cases separately. */
+  #if _WIN32
+    while (p[-1] != '/' && p[-1] != '\\') {
+      if (p == filename) {
+        count = filename_length;
+        return count;
+      }
+      count++;
+      p--;
+    }
+    p++;
+    return count;
+  #else
+    while (*(--p) != '/') {
+      if (p == filename) {
+        count = filename_length;
+        return count;
+      }
+      count++;
+    }
+    return count;
+  #endif
 }
-#endif
 
+static char *generate_mtl_filename(const char *obj_filename,
+                                   size_t obj_filename_length,
+                                   const char *mtllib_name,
+                                   size_t mtllib_name_length) {
+  /* Create a dynamically-allocated material filename. This allows the material
+   * and obj files to be separated, however the mtllib name in the OBJ file
+   * must be a relative path to the material file from the OBJ's directory.
+   * This does not support the matllib name as an absolute address. */
+  char *mtl_filename;
+  char *p;
+  size_t mtl_filename_length;
+  size_t obj_basename_length;
+
+  /* Calculate required size of mtl_filename and allocate */
+  obj_basename_length = basename_len(obj_filename, obj_filename_length);
+  mtl_filename_length = (obj_filename_length - obj_basename_length) + mtllib_name_length;
+  mtl_filename = (char *)TINYOBJ_MALLOC(mtl_filename_length);
+
+  /* Copy over the obj's path */
+  memcpy(mtl_filename, obj_filename, (obj_filename_length - obj_basename_length));
+
+  /* Overwrite the obj basename with the mtllib name, filling the string */
+  p = &mtl_filename[mtl_filename_length - mtllib_name_length];
+  strcpy(p, mtllib_name);
+  return mtl_filename;
+}
 
 int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                       size_t *num_shapes, tinyobj_material_t **materials_out,
                       size_t *num_materials_out, const char *obj_filename,
-		      file_reader_callback file_reader, void *ctx,
+                      file_reader_callback file_reader, void *ctx,
                       unsigned int flags) {
   LineInfo *line_infos = NULL;
   Command *commands = NULL;
@@ -1402,42 +1430,38 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     TINYOBJ_FREE(line_infos);
   }
 
-  /* Load material(if exits) */
+  /* Load material (if it exists) */
   if (mtllib_line_index >= 0 && commands[mtllib_line_index].mtllib_name &&
       commands[mtllib_line_index].mtllib_name_len > 0) {
-
-    /* Extract .obj filepath. */
-    /*char *search_path = NULL; */
-    char *filename = NULL;
+    /* Maximum length allowed by Linux - higher than Windows and macOS */
+    size_t obj_filename_len = my_strnlen(obj_filename, 4096 + 255) + 1;
+    char *mtl_filename;
+    char *mtllib_name;
+    size_t mtllib_name_len = 0;
     int ret;
 
-#if 0
-    /* Simply find last delimiter `/`
-     * TODO(syoyo): Robust extraction of base directory of filename.
-     */
-    if (obj_filename) {
-      char *basedir = my_strdup(file_name, my_strnlen(file_name, TINYOBJ_MAX_FILEPATH));
-      search_path = get_dirname(basedir);
-    }
-#endif
+    mtllib_name_len = length_until_line_feed(commands[mtllib_line_index].mtllib_name,
+                                             commands[mtllib_line_index].mtllib_name_len);
 
-    filename = my_strndup(commands[mtllib_line_index].mtllib_name,
-                                commands[mtllib_line_index].mtllib_name_len);
+    mtllib_name = my_strndup(commands[mtllib_line_index].mtllib_name,
+                             mtllib_name_len);
 
-    ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials, filename, obj_filename, file_reader, ctx, &material_table);
+    /* allow for NUL terminator */
+    mtllib_name_len++;
+    mtl_filename = generate_mtl_filename(obj_filename, obj_filename_len,
+                                         mtllib_name, mtllib_name_len);
+
+    ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials,
+                                           mtl_filename, obj_filename,
+                                           file_reader, ctx,
+                                           &material_table);
 
     if (ret != TINYOBJ_SUCCESS) {
       /* warning. */
-      fprintf(stderr, "TINYOBJ: Failed to parse material file '%s': %d\n", filename, ret);
+      fprintf(stderr, "TINYOBJ: Failed to parse material file '%s': %d\n", mtl_filename, ret);
     }
-
-    TINYOBJ_FREE(filename);
-#if 0
-    if (search_path) {
-      TINYOBJ_FREE(search_path);
-    }
-#endif
-
+    TINYOBJ_FREE(mtl_filename);
+    TINYOBJ_FREE(mtllib_name);
   }
 
   /* Construct attributes */
