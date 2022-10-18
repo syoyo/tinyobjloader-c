@@ -27,6 +27,10 @@
 /* @todo { Remove stddef dependency. size_t? } */
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   char *name;
 
@@ -143,18 +147,22 @@ extern void tinyobj_shapes_free(tinyobj_shape_t *shapes, size_t num_shapes);
 extern void tinyobj_materials_free(tinyobj_material_t *materials,
                                    size_t num_materials);
 
+#ifdef __cplusplus
+}
+#endif
+
 #ifdef TINYOBJ_LOADER_C_IMPLEMENTATION
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
 
-#if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_REALLOC) && defined(TINYOBJ_CALLOC) && defined(TINYOBJ_FREE)
+#if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_CALLOC) && defined(TINYOBJ_FREE) && (defined(TINYOBJ_REALLOC) || defined(TINYOBJ_REALLOC_SIZED))
 /* ok */
-#elif !defined(TINYOBJ_MALLOC) && !defined(TINYOBJ_REALLOC) && !defined(TINYOBJ_CALLOC) && !defined(TINYOBJ_FREE)
+#elif !defined(TINYOBJ_MALLOC) && !defined(TINYOBJ_CALLOC) && !defined(TINYOBJ_FREE) && !defined(TINYOBJ_REALLOC) && !defined(TINYOBJ_REALLOC_SIZED)
 /* ok */
 #else
-#error "Must define all or none of TINYOBJ_MALLOC, TINYOBJ_REALLOC, TINYOBJ_CALLOC and TINYOBJ_FREE."
+#error "Must define all or none of TINYOBJ_MALLOC, TINYOBJ_CALLOC, TINYOBJ_FREE, and TINYOBJ_REALLOC (or TINYOBJ_REALLOC_SIZED)."
 #endif
 
 #ifndef TINYOBJ_MALLOC
@@ -163,6 +171,10 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #define TINYOBJ_REALLOC realloc
 #define TINYOBJ_CALLOC calloc
 #define TINYOBJ_FREE free
+#endif
+
+#ifndef TINYOBJ_REALLOC_SIZED
+#define TINYOBJ_REALLOC_SIZED(p,oldsz,newsz) TINYOBJ_REALLOC(p,newsz)
 #endif
 
 #define TINYOBJ_MAX_FACES_PER_F_LINE (16)
@@ -492,7 +504,7 @@ static void parseFloat3(float *x, float *y, float *z, const char **token) {
 }
 
 static size_t my_strnlen(const char *s, size_t n) {
-    const char *p = memchr(s, 0, n);
+    const char *p = (char *)memchr(s, 0, n);
     return p ? (size_t)(p - s) : n;
 }
 
@@ -548,7 +560,7 @@ char *dynamic_fgets(char **buf, size_t *size, FILE *file) {
   do {
     old_size = *size;
     *size *= 2;
-    *buf = (char*)TINYOBJ_REALLOC(*buf, *size);
+    *buf = (char*)TINYOBJ_REALLOC_SIZED(*buf, old_size, *size);
     offset = &((*buf)[old_size - 1]);
 
     ret = fgets(offset, (int)(old_size + 1), file);
@@ -700,7 +712,8 @@ static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
   }
   new_capacity = 2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
   /* Create a new hash table. We're not calling create_hash_table because we want to realloc the hash array */
-  new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC((void*) hash_table->hashes, sizeof(unsigned long) * new_capacity);
+  new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC_SIZED(
+      (void*) hash_table->hashes, sizeof(unsigned long) * hash_table->capacity, sizeof(unsigned long) * new_capacity);
   new_hash_table.entries = (hash_table_entry_t*) TINYOBJ_CALLOC(new_capacity, sizeof(hash_table_entry_t));
   new_hash_table.capacity = new_capacity;
   new_hash_table.n = hash_table->n;
@@ -753,8 +766,9 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
                                                 size_t num_materials,
                                                 tinyobj_material_t *new_mat) {
   tinyobj_material_t *dst;
-  dst = (tinyobj_material_t *)TINYOBJ_REALLOC(
-                                      prev, sizeof(tinyobj_material_t) * (num_materials + 1));
+  size_t num_bytes = sizeof(tinyobj_material_t) * num_materials;
+  dst = (tinyobj_material_t *)TINYOBJ_REALLOC_SIZED(
+                                      prev, num_bytes, num_bytes + sizeof(tinyobj_material_t));
 
   dst[num_materials] = (*new_mat); /* Just copy pointer for char* members */
   return dst;
