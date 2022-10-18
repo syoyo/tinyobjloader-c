@@ -27,6 +27,10 @@
 /* @todo { Remove stddef dependency. size_t? } */
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   char *name;
 
@@ -142,6 +146,10 @@ extern void tinyobj_attrib_free(tinyobj_attrib_t *attrib);
 extern void tinyobj_shapes_free(tinyobj_shape_t *shapes, size_t num_shapes);
 extern void tinyobj_materials_free(tinyobj_material_t *materials,
                                    size_t num_materials);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef TINYOBJ_LOADER_C_IMPLEMENTATION
 #include <stdio.h>
@@ -492,7 +500,7 @@ static void parseFloat3(float *x, float *y, float *z, const char **token) {
 }
 
 static size_t my_strnlen(const char *s, size_t n) {
-    const char *p = memchr(s, 0, n);
+    const char *p = (char *)memchr(s, 0, n);
     return p ? (size_t)(p - s) : n;
 }
 
