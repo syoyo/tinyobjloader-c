@@ -866,6 +866,7 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   if (buf == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
 
   if (get_line_infos(buf, len, &line_infos, &num_lines) != 0) {
+		TINYOBJ_FREE(line_infos);
     return TINYOBJ_ERROR_EMPTY;
   }
 
@@ -1072,6 +1073,8 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 
     /* @todo { unknown parameter } */
   }
+
+	TINYOBJ_FREE(line_infos);
 
   if (material.name) {
     /* Flush last material element */
