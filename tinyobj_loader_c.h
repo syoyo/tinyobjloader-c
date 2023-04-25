@@ -27,10 +27,6 @@
 /* @todo { Remove stddef dependency. size_t? } */
 #include <stddef.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct {
   char *name;
 
@@ -147,22 +143,18 @@ extern void tinyobj_shapes_free(tinyobj_shape_t *shapes, size_t num_shapes);
 extern void tinyobj_materials_free(tinyobj_material_t *materials,
                                    size_t num_materials);
 
-#ifdef __cplusplus
-}
-#endif
-
 #ifdef TINYOBJ_LOADER_C_IMPLEMENTATION
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
 
-#if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_CALLOC) && defined(TINYOBJ_FREE) && (defined(TINYOBJ_REALLOC) || defined(TINYOBJ_REALLOC_SIZED))
+#if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_REALLOC) && defined(TINYOBJ_CALLOC) && defined(TINYOBJ_FREE)
 /* ok */
-#elif !defined(TINYOBJ_MALLOC) && !defined(TINYOBJ_CALLOC) && !defined(TINYOBJ_FREE) && !defined(TINYOBJ_REALLOC) && !defined(TINYOBJ_REALLOC_SIZED)
+#elif !defined(TINYOBJ_MALLOC) && !defined(TINYOBJ_REALLOC) && !defined(TINYOBJ_CALLOC) && !defined(TINYOBJ_FREE)
 /* ok */
 #else
-#error "Must define all or none of TINYOBJ_MALLOC, TINYOBJ_CALLOC, TINYOBJ_FREE, and TINYOBJ_REALLOC (or TINYOBJ_REALLOC_SIZED)."
+#error "Must define all or none of TINYOBJ_MALLOC, TINYOBJ_REALLOC, TINYOBJ_CALLOC and TINYOBJ_FREE."
 #endif
 
 #ifndef TINYOBJ_MALLOC
@@ -171,10 +163,6 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #define TINYOBJ_REALLOC realloc
 #define TINYOBJ_CALLOC calloc
 #define TINYOBJ_FREE free
-#endif
-
-#ifndef TINYOBJ_REALLOC_SIZED
-#define TINYOBJ_REALLOC_SIZED(p,oldsz,newsz) TINYOBJ_REALLOC(p,newsz)
 #endif
 
 #define TINYOBJ_MAX_FACES_PER_F_LINE (16)
@@ -479,32 +467,20 @@ fail:
   return 0;
 }
 
-static float parseFloat(const char **token) {
-  const char *end;
-  double val = 0.0;
-  float f = 0.0f;
-  skip_space(token);
-  end = (*token) + until_space((*token));
-  val = 0.0;
-  tryParseDouble((*token), end, &val);
-  f = (float)(val);
-  (*token) = end;
-  return f;
-}
+static int my_memcpy(char *dst, const size_t dstlen, const char *src, const size_t srclen) {
+  if (srclen > dstlen) {
+    return 0;
+  }
 
-static void parseFloat2(float *x, float *y, const char **token) {
-  (*x) = parseFloat(token);
-  (*y) = parseFloat(token);
-}
+  for (size_t i = 0; i < srclen; i++) {
+    dst[i] = src[i];
+  }
 
-static void parseFloat3(float *x, float *y, float *z, const char **token) {
-  (*x) = parseFloat(token);
-  (*y) = parseFloat(token);
-  (*z) = parseFloat(token);
+  return 1;
 }
 
 static size_t my_strnlen(const char *s, size_t n) {
-    const char *p = (char *)memchr(s, 0, n);
+    const char *p = memchr(s, 0, n);
     return p ? (size_t)(p - s) : n;
 }
 
@@ -544,6 +520,185 @@ static char *my_strndup(const char *s, size_t len) {
   return d;
 }
 
+
+static float parseFloat(const char **token) {
+  const char *end;
+  double val = 0.0;
+  float f = 0.0f;
+  skip_space(token);
+  end = (*token) + until_space((*token));
+  val = 0.0;
+  tryParseDouble((*token), end, &val);
+  f = (float)(val);
+  (*token) = end;
+  return f;
+}
+
+/* n must be 1 or greater
+ * `outc` must be at least 5 bytes allocated.
+ * @return strlen(outc)
+ */
+static int escapeChar(const char *str, size_t n, char *outc) {
+
+  if (n < 1) {
+    return 0;
+  }
+
+  size_t i = 0;
+
+  int ret = 0;
+
+  if (str[i] == '\a') {
+    ret = my_memcpy(outc, 5,  "\\0x07", 5);
+    if (!ret) {
+      return 0;
+    }
+  } else if (str[i] == '\b') {
+    ret = my_memcpy(outc, 5,  "\\0x08", 5);
+    if (!ret) {
+      return 0;
+    }
+  } else if (str[i] == '\t') {
+    ret = my_memcpy(outc, 5,  "\\t", 2);
+    if (!ret) {
+      return 0;
+    }
+  } else if (str[i] == '\v') {
+    ret = my_memcpy(outc, 5,  "\\x0b", 5);
+    if (!ret) {
+      return 0;
+    }
+  } else if (str[i] == '\f') {
+    ret = my_memcpy(outc, 5,  "\\x0c", 5);
+    if (!ret) {
+      return 0;
+    }
+  } else if (str[i] == '\\') {
+    /* skip escaping backshash for escaped quote string: \' \" */
+    if (i + 1 < n) {
+      if ((str[i+1] == '"') || (str[i+1] == '\'')) {
+        (*outc) = str[i];
+      } else {
+        ret = my_memcpy(outc, 5, "\\\\", 2);
+        if (!ret) {
+          return 0;
+        }
+      }
+    } else {
+      ret = my_memcpy(outc, 5, "\\\\", 2);
+      if (!ret) {
+        return 0;
+      }
+    }
+  } else {
+    (*outc) = str[i];
+  }
+
+  return 1; // ok
+}
+
+
+/*
+ * Extract string from a string buffer.
+ * Skip whitespaces, newlines and control sequences.
+ *
+ * @param[in] s : Input string buffer(do not necessary to end with null-char).
+ * @param[in] bufsize : (max) Bytes of input string buffer.
+ * @param[in] maxdstsize : Max bytes of dst buffer(includes null-terminated char. so must be 1 or greater).
+ * @param[out] str_out : dest buffer(memory(equal or larger than `maxdstsize`) must be allocated in advance and)
+ *
+ * @return the length of string(for empty string, its 1(null-char)). 0 when failed to parse input as string.
+ */
+static size_t parseString(const char *s, const size_t bufsize, const size_t maxdstsize, char *str_out) {
+
+  if (!s) {
+    return 0;
+  }
+
+  if (bufsize == 0) {
+    return 0;
+  }
+
+  if (maxdstsize == 0) {
+    return 0;
+  }
+
+  if (!str_out) {
+    return 0;
+  }
+
+  const char *start_s = s;
+
+  /* todo: Use more secure skip function */
+  skip_space(&s);
+
+  size_t start_loc = (size_t)(s - start_s);
+  if (start_loc > bufsize) {
+    return 0;
+  }
+
+  size_t dstn = maxdstsize;
+  size_t dst_idx = 0;
+  const char *currp = &s[start_loc];
+  for (; dst_idx < (bufsize - start_loc); ) {
+    if (dstn < 1) {
+      break;
+    }
+
+    if (*currp == '\0') {
+      str_out[dst_idx] = '\0';
+      break;
+    }
+
+    char buf[5];
+    int ns = escapeChar(currp, dstn, buf);
+    if (ns == 0) {
+      return 0;
+    }
+
+    if ((size_t)(ns) > dstn) {
+      return 0;
+    }
+
+    for (size_t i = 0; i < (size_t)(ns); i++) {
+      str_out[dst_idx +i] = currp[i];
+    }
+    dst_idx += (size_t)(ns);
+
+    dstn -= (size_t)(ns);
+
+    currp += ns;
+  }
+
+  size_t strlength = dst_idx;
+  if ((*currp) != '\0') {
+    /* not null-terminated */
+
+    if ((dst_idx + 1) > maxdstsize) {
+      /* no space for '\0' */
+      return 0;
+    }
+
+    str_out[dst_idx+1] = '\0';
+
+    return (dst_idx+1);
+  }
+
+  return dst_idx;
+}
+
+
+static void parseFloat2(float *x, float *y, const char **token) {
+  (*x) = parseFloat(token);
+  (*y) = parseFloat(token);
+}
+
+static void parseFloat3(float *x, float *y, float *z, const char **token) {
+  (*x) = parseFloat(token);
+  (*y) = parseFloat(token);
+  (*z) = parseFloat(token);
+}
+
 char *dynamic_fgets(char **buf, size_t *size, FILE *file) {
   char *offset;
   char *ret;
@@ -560,7 +715,7 @@ char *dynamic_fgets(char **buf, size_t *size, FILE *file) {
   do {
     old_size = *size;
     *size *= 2;
-    *buf = (char*)TINYOBJ_REALLOC_SIZED(*buf, old_size, *size);
+    *buf = (char*)TINYOBJ_REALLOC(*buf, *size);
     offset = &((*buf)[old_size - 1]);
 
     ret = fgets(offset, (int)(old_size + 1), file);
@@ -712,8 +867,7 @@ static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
   }
   new_capacity = 2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
   /* Create a new hash table. We're not calling create_hash_table because we want to realloc the hash array */
-  new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC_SIZED(
-      (void*) hash_table->hashes, sizeof(unsigned long) * hash_table->capacity, sizeof(unsigned long) * new_capacity);
+  new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC((void*) hash_table->hashes, sizeof(unsigned long) * new_capacity);
   new_hash_table.entries = (hash_table_entry_t*) TINYOBJ_CALLOC(new_capacity, sizeof(hash_table_entry_t));
   new_hash_table.capacity = new_capacity;
   new_hash_table.n = hash_table->n;
@@ -766,9 +920,8 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
                                                 size_t num_materials,
                                                 tinyobj_material_t *new_mat) {
   tinyobj_material_t *dst;
-  size_t num_bytes = sizeof(tinyobj_material_t) * num_materials;
-  dst = (tinyobj_material_t *)TINYOBJ_REALLOC_SIZED(
-                                      prev, num_bytes, num_bytes + sizeof(tinyobj_material_t));
+  dst = (tinyobj_material_t *)TINYOBJ_REALLOC(
+                                      prev, sizeof(tinyobj_material_t) * (num_materials + 1));
 
   dst[num_materials] = (*new_mat); /* Just copy pointer for char* members */
   return dst;
@@ -866,7 +1019,6 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
   if (buf == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
 
   if (get_line_infos(buf, len, &line_infos, &num_lines) != 0) {
-		TINYOBJ_FREE(line_infos);
     return TINYOBJ_ERROR_EMPTY;
   }
 
@@ -1073,8 +1225,6 @@ static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
 
     /* @todo { unknown parameter } */
   }
-
-	TINYOBJ_FREE(line_infos);
 
   if (material.name) {
     /* Flush last material element */
@@ -1320,7 +1470,7 @@ static size_t basename_len(const char *filename, size_t filename_length) {
   size_t count = 1;
 
   /* On Windows, the directory delimiter is '\' and both it and '/' is
-   * reserved by the filesystem. On *nix platforms, only the '/' character 
+   * reserved by the filesystem. On *nix platforms, only the '/' character
    * is reserved, so account for the two cases separately. */
   #if _WIN32
     while (p[-1] != '/' && p[-1] != '\\') {
