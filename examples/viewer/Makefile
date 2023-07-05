@@ -5,9 +5,11 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 LDFLAGS=-framework OpenGL -lglfw3 -framework Cocoa -framework IOKit -framework CoreVideo
 CFLAGS=-Wall -Wextra -Wshadow -Wformat=2 -pedantic -std=c99 -O2 -g
-endif
-ifeq ($(UNAME_S),Linux)
+else ifeq ($(UNAME_S),Linux)
 LDFLAGS=-lGL -lGLU -lm -pthread -ldl `pkg-config --libs glfw3`
+CFLAGS=-Wall -Wextra -Wshadow -Wformat=2 -pedantic -std=c99 -O2 -g `pkg-config --cflags glfw3`
+else # assuming: Windows MSYS/MINGW
+LDFLAGS=-lopengl32 -lglu32 -lm -pthread `pkg-config --libs glfw3`
 CFLAGS=-Wall -Wextra -Wshadow -Wformat=2 -pedantic -std=c99 -O2 -g `pkg-config --cflags glfw3`
 endif
 
