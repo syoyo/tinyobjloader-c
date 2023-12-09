@@ -59,9 +59,7 @@ typedef struct {
   unsigned int length;
 } tinyobj_shape_t;
 
-typedef struct {
-  int v_idx, vt_idx, vn_idx;
-} tinyobj_vertex_index_t;
+typedef struct { int v_idx, vt_idx, vn_idx; } tinyobj_vertex_index_t;
 
 typedef struct {
   unsigned int num_vertices;
@@ -80,6 +78,7 @@ typedef struct {
   int *material_ids;
 } tinyobj_attrib_t;
 
+
 #define TINYOBJ_FLAG_TRIANGULATE (1 << 0)
 
 #define TINYOBJ_INVALID_INDEX (0x80000000)
@@ -89,23 +88,19 @@ typedef struct {
 #define TINYOBJ_ERROR_INVALID_PARAMETER (-2)
 #define TINYOBJ_ERROR_FILE_OPERATION (-3)
 
-/* Provide a callback that can read text file without any parsing or
- * modification. The obj and mtl parser is going to read all the necessary data:
+/* Provide a callback that can read text file without any parsing or modification.
+ * The obj and mtl parser is going to read all the necessary data:
  * tinyobj_parse_obj
  * tinyobj_parse_mtl_file
  *
  * @param[in] ctx User provided context.
  * @param[in] filename Filename to be loaded.
  * @param[in] is_mtl 1 when the callback is invoked for loading .mtl. 0 for .obj
- * @param[in] obj_filename .obj filename. Useful when you load .mtl from same
- * location of .obj. When the callback is called to load .obj, `filename` and
- * `obj_filename` are same.
+ * @param[in] obj_filename .obj filename. Useful when you load .mtl from same location of .obj. When the callback is called to load .obj, `filename` and `obj_filename` are same.
  * @param[out] buf Content of loaded file
  * @param[out] len Size of content(file)
  */
-typedef void (*file_reader_callback)(void *ctx, const char *filename,
-                                     int is_mtl, const char *obj_filename,
-                                     char **buf, unsigned long *len);
+typedef void (*file_reader_callback)(void *ctx, const char *filename, int is_mtl, const char *obj_filename, char **buf, unsigned long *len);
 
 /* Parse wavefront .obj
  * @param[out] attrib Attibutes
@@ -122,20 +117,16 @@ typedef void (*file_reader_callback)(void *ctx, const char *filename,
  * Returns TINYOBJ_ERR_*** when there is an error.
  */
 extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
-                             unsigned long *num_shapes,
-                             tinyobj_material_t **materials,
-                             unsigned long *num_materials,
-                             const char *file_name,
-                             file_reader_callback file_reader, void *ctx,
-                             unsigned int flags);
+                             unsigned long *num_shapes, tinyobj_material_t **materials,
+                             unsigned long *num_materials, const char *file_name, file_reader_callback file_reader,
+                             void *ctx, unsigned int flags);
 
 /* Parse wavefront .mtl
  *
  * @param[out] materials_out
  * @param[out] num_materials_out
  * @param[in] filename .mtl filename
- * @param[in] filename of .obj filename. could be NULL if you just want to parse
- .mtl file.
+ * @param[in] filename of .obj filename. could be NULL if you just want to parse .mtl file.
  * @param[in] file_reader File reader callback
  * @param[in[ ctx Context pointer passed to the file_reader callack.
 
@@ -144,14 +135,12 @@ extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
  */
 extern int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                                   unsigned long *num_materials_out,
-                                  const char *filename,
-                                  const char *obj_filename,
-                                  file_reader_callback file_reader, void *ctx);
+                                  const char *filename, const char *obj_filename, file_reader_callback file_reader,
+				  void *ctx);
 
 extern void tinyobj_attrib_init(tinyobj_attrib_t *attrib);
 extern void tinyobj_attrib_free(tinyobj_attrib_t *attrib);
-extern void tinyobj_shapes_free(tinyobj_shape_t *shapes,
-                                unsigned long num_shapes);
+extern void tinyobj_shapes_free(tinyobj_shape_t *shapes, unsigned long num_shapes);
 extern void tinyobj_materials_free(tinyobj_material_t *materials,
                                    unsigned long num_materials);
 
@@ -160,22 +149,17 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #endif
 
 #ifdef TINYOBJ_LOADER_C_IMPLEMENTATION
-#include <assert.h>
-#include <errno.h>
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
+#include <errno.h>
 
-#if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_CALLOC) && \
-    defined(TINYOBJ_FREE) &&                              \
-    (defined(TINYOBJ_REALLOC) || defined(TINYOBJ_REALLOC_SIZED))
+#if defined(TINYOBJ_MALLOC) && defined(TINYOBJ_CALLOC) && defined(TINYOBJ_FREE) && (defined(TINYOBJ_REALLOC) || defined(TINYOBJ_REALLOC_SIZED))
 /* ok */
-#elif !defined(TINYOBJ_MALLOC) && !defined(TINYOBJ_CALLOC) && \
-    !defined(TINYOBJ_FREE) && !defined(TINYOBJ_REALLOC) &&    \
-    !defined(TINYOBJ_REALLOC_SIZED)
+#elif !defined(TINYOBJ_MALLOC) && !defined(TINYOBJ_CALLOC) && !defined(TINYOBJ_FREE) && !defined(TINYOBJ_REALLOC) && !defined(TINYOBJ_REALLOC_SIZED)
 /* ok */
 #else
-#error \
-    "Must define all or none of TINYOBJ_MALLOC, TINYOBJ_CALLOC, TINYOBJ_FREE, and TINYOBJ_REALLOC (or TINYOBJ_REALLOC_SIZED)."
+#error "Must define all or none of TINYOBJ_MALLOC, TINYOBJ_CALLOC, TINYOBJ_FREE, and TINYOBJ_REALLOC (or TINYOBJ_REALLOC_SIZED)."
 #endif
 
 #ifndef TINYOBJ_MALLOC
@@ -187,7 +171,7 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #endif
 
 #ifndef TINYOBJ_REALLOC_SIZED
-#define TINYOBJ_REALLOC_SIZED(p, oldsz, newsz) TINYOBJ_REALLOC(p, newsz)
+#define TINYOBJ_REALLOC_SIZED(p,oldsz,newsz) TINYOBJ_REALLOC(p,newsz)
 #endif
 
 #define TINYOBJ_MAX_FACES_PER_F_LINE (16)
@@ -234,8 +218,7 @@ static unsigned long length_until_newline(const char *token, unsigned long n) {
   return len;
 }
 
-static unsigned long length_until_line_feed(const char *token,
-                                            unsigned long n) {
+static unsigned long length_until_line_feed(const char *token, unsigned long n) {
   unsigned long len = 0;
 
   /* Assume token[n-1] = '\0' */
@@ -249,7 +232,7 @@ static unsigned long length_until_line_feed(const char *token,
 }
 
 /* http://stackoverflow.com/questions/5710091/how-does-atoi-function-in-c-work
- */
+*/
 static int my_atoi(const char *c) {
   int value = 0;
   int sign = 1;
@@ -463,30 +446,30 @@ static int tryParseDouble(const char *s, const char *s_end, double *result) {
     if (read == 0) goto fail;
   }
 
-assemble:
+assemble :
 
-{
-  double a = 1.0; /* = pow(5.0, exponent); */
-  double b = 1.0; /* = 2.0^exponent */
-  int i;
-  for (i = 0; i < exponent; i++) {
-    a = a * 5.0;
-  }
+  {
+    double a = 1.0; /* = pow(5.0, exponent); */
+    double b  = 1.0; /* = 2.0^exponent */
+    int i;
+    for (i = 0; i < exponent; i++) {
+      a = a * 5.0;
+    }
 
-  for (i = 0; i < exponent; i++) {
-    b = b * 2.0;
-  }
+    for (i = 0; i < exponent; i++) {
+      b = b * 2.0;
+    }
 
-  if (exp_sign == '-') {
-    a = 1.0 / a;
-    b = 1.0 / b;
-  }
+    if (exp_sign == '-') {
+      a = 1.0 / a;
+      b = 1.0 / b;
+    }
 
-  *result =
+    *result =
       /* (sign == '+' ? 1 : -1) * ldexp(mantissa * pow(5.0, exponent),
          exponent); */
       (sign == '+' ? 1 : -1) * (mantissa * a * b);
-}
+  }
 
   return 1;
 fail:
@@ -518,8 +501,8 @@ static void parseFloat3(float *x, float *y, float *z, const char **token) {
 }
 
 static unsigned long my_strnlen(const char *s, unsigned long n) {
-  const char *p = (char *)memchr(s, 0, n);
-  return p ? (unsigned long)(p - s) : n;
+    const char *p = (char *)memchr(s, 0, n);
+    return p ? (unsigned long)(p - s) : n;
 }
 
 static char *my_strdup(const char *s, unsigned long max_length) {
@@ -574,11 +557,11 @@ char *dynamic_fgets(char **buf, unsigned long *size, FILE *file) {
   do {
     old_size = *size;
     *size *= 2;
-    *buf = (char *)TINYOBJ_REALLOC_SIZED(*buf, old_size, *size);
+    *buf = (char*)TINYOBJ_REALLOC_SIZED(*buf, old_size, *size);
     offset = &((*buf)[old_size - 1]);
 
     ret = fgets(offset, (int)(old_size + 1), file);
-  } while (ret && (NULL == strchr(*buf, '\n')));
+  } while(ret && (NULL == strchr(*buf, '\n')));
 
   return ret;
 }
@@ -613,23 +596,26 @@ static void initMaterial(tinyobj_material_t *material) {
 
 #define HASH_TABLE_DEFAULT_SIZE 10
 
-typedef struct hash_table_entry_t {
+typedef struct hash_table_entry_t
+{
   unsigned long hash;
   int filled;
   int pad0;
   long value;
 
-  struct hash_table_entry_t *next;
+  struct hash_table_entry_t* next;
 } hash_table_entry_t;
 
-typedef struct {
-  unsigned long *hashes;
-  hash_table_entry_t *entries;
+typedef struct
+{
+  unsigned long* hashes;
+  hash_table_entry_t* entries;
   unsigned long capacity;
   unsigned long n;
 } hash_table_t;
 
-static unsigned long hash_djb2(const unsigned char *str) {
+static unsigned long hash_djb2(const unsigned char* str)
+{
   unsigned long hash = 5381;
   int c;
 
@@ -640,34 +626,36 @@ static unsigned long hash_djb2(const unsigned char *str) {
   return hash;
 }
 
-static void create_hash_table(unsigned long start_capacity,
-                              hash_table_t *hash_table) {
-  if (start_capacity < 1) start_capacity = HASH_TABLE_DEFAULT_SIZE;
-  hash_table->hashes =
-      (unsigned long *)TINYOBJ_MALLOC(start_capacity * sizeof(unsigned long));
-  hash_table->entries = (hash_table_entry_t *)TINYOBJ_CALLOC(
-      start_capacity, sizeof(hash_table_entry_t));
+static void create_hash_table(unsigned long start_capacity, hash_table_t* hash_table)
+{
+  if (start_capacity < 1)
+    start_capacity = HASH_TABLE_DEFAULT_SIZE;
+  hash_table->hashes = (unsigned long*) TINYOBJ_MALLOC(start_capacity * sizeof(unsigned long));
+  hash_table->entries = (hash_table_entry_t*) TINYOBJ_CALLOC(start_capacity, sizeof(hash_table_entry_t));
   hash_table->capacity = start_capacity;
   hash_table->n = 0;
 }
 
-static void destroy_hash_table(hash_table_t *hash_table) {
+static void destroy_hash_table(hash_table_t* hash_table)
+{
   TINYOBJ_FREE(hash_table->entries);
   TINYOBJ_FREE(hash_table->hashes);
 }
 
 /* Insert with quadratic probing */
-static int hash_table_insert_value(unsigned long hash, long value,
-                                   hash_table_t *hash_table) {
+static int hash_table_insert_value(unsigned long hash, long value, hash_table_t* hash_table)
+{
   /* Insert value */
   unsigned long start_index = hash % hash_table->capacity;
   unsigned long index = start_index;
-  hash_table_entry_t *start_entry = hash_table->entries + start_index;
+  hash_table_entry_t* start_entry = hash_table->entries + start_index;
   unsigned long i;
-  hash_table_entry_t *entry;
+  hash_table_entry_t* entry;
 
-  for (i = 1; hash_table->entries[index].filled; i++) {
-    if (i >= hash_table->capacity) return HASH_TABLE_ERROR;
+  for (i = 1; hash_table->entries[index].filled; i++)
+  {
+    if (i >= hash_table->capacity)
+      return HASH_TABLE_ERROR;
     index = (start_index + (i * i)) % hash_table->capacity;
   }
 
@@ -677,8 +665,7 @@ static int hash_table_insert_value(unsigned long hash, long value,
   entry->value = value;
 
   if (index != start_index) {
-    /* This is a new entry, but not the start entry, hence we need to add a next
-     * pointer to our entry */
+    /* This is a new entry, but not the start entry, hence we need to add a next pointer to our entry */
     entry->next = start_entry->next;
     start_entry->next = entry;
   }
@@ -686,22 +673,24 @@ static int hash_table_insert_value(unsigned long hash, long value,
   return HASH_TABLE_SUCCESS;
 }
 
-static int hash_table_insert(unsigned long hash, long value,
-                             hash_table_t *hash_table) {
+static int hash_table_insert(unsigned long hash, long value, hash_table_t* hash_table)
+{
   int ret = hash_table_insert_value(hash, value, hash_table);
-  if (ret == HASH_TABLE_SUCCESS) {
+  if (ret == HASH_TABLE_SUCCESS)
+  {
     hash_table->hashes[hash_table->n] = hash;
     hash_table->n++;
   }
   return ret;
 }
 
-static hash_table_entry_t *hash_table_find(unsigned long hash,
-                                           hash_table_t *hash_table) {
-  hash_table_entry_t *entry =
-      hash_table->entries + (hash % hash_table->capacity);
-  while (entry) {
-    if (entry->hash == hash && entry->filled) {
+static hash_table_entry_t* hash_table_find(unsigned long hash, hash_table_t* hash_table)
+{
+  hash_table_entry_t* entry = hash_table->entries + (hash % hash_table->capacity);
+  while (entry)
+  {
+    if (entry->hash == hash && entry->filled)
+    {
       return entry;
     }
     entry = entry->next;
@@ -709,8 +698,8 @@ static hash_table_entry_t *hash_table_find(unsigned long hash,
   return NULL;
 }
 
-static void hash_table_maybe_grow(unsigned long new_n,
-                                  hash_table_t *hash_table) {
+static void hash_table_maybe_grow(unsigned long new_n, hash_table_t* hash_table)
+{
   unsigned long new_capacity;
   hash_table_t new_hash_table;
   unsigned long i;
@@ -718,44 +707,38 @@ static void hash_table_maybe_grow(unsigned long new_n,
   if (new_n <= hash_table->capacity) {
     return;
   }
-  new_capacity =
-      2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
-  /* Create a new hash table. We're not calling create_hash_table because we
-   * want to realloc the hash array */
-  new_hash_table.hashes = hash_table->hashes =
-      (unsigned long *)TINYOBJ_REALLOC_SIZED(
-          (void *)hash_table->hashes,
-          sizeof(unsigned long) * hash_table->capacity,
-          sizeof(unsigned long) * new_capacity);
-  new_hash_table.entries = (hash_table_entry_t *)TINYOBJ_CALLOC(
-      new_capacity, sizeof(hash_table_entry_t));
+  new_capacity = 2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
+  /* Create a new hash table. We're not calling create_hash_table because we want to realloc the hash array */
+  new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC_SIZED(
+      (void*) hash_table->hashes, sizeof(unsigned long) * hash_table->capacity, sizeof(unsigned long) * new_capacity);
+  new_hash_table.entries = (hash_table_entry_t*) TINYOBJ_CALLOC(new_capacity, sizeof(hash_table_entry_t));
   new_hash_table.capacity = new_capacity;
   new_hash_table.n = hash_table->n;
 
   /* Rehash */
-  for (i = 0; i < hash_table->capacity; i++) {
-    hash_table_entry_t *entry =
-        hash_table_find(hash_table->hashes[i], hash_table);
-    hash_table_insert_value(hash_table->hashes[i], entry->value,
-                            &new_hash_table);
+  for (i = 0; i < hash_table->capacity; i++)
+  {
+    hash_table_entry_t* entry = hash_table_find(hash_table->hashes[i], hash_table);
+    hash_table_insert_value(hash_table->hashes[i], entry->value, &new_hash_table);
   }
 
   TINYOBJ_FREE(hash_table->entries);
   (*hash_table) = new_hash_table;
 }
 
-static int hash_table_exists(const char *name, hash_table_t *hash_table) {
-  return hash_table_find(hash_djb2((const unsigned char *)name), hash_table) !=
-         NULL;
+static int hash_table_exists(const char* name, hash_table_t* hash_table)
+{
+  return hash_table_find(hash_djb2((const unsigned char*)name), hash_table) != NULL;
 }
 
-static void hash_table_set(const char *name, unsigned long val,
-                           hash_table_t *hash_table) {
+static void hash_table_set(const char* name, unsigned long val, hash_table_t* hash_table)
+{
   /* Hash name */
   unsigned long hash = hash_djb2((const unsigned char *)name);
 
-  hash_table_entry_t *entry = hash_table_find(hash, hash_table);
-  if (entry) {
+  hash_table_entry_t* entry = hash_table_find(hash, hash_table);
+  if (entry)
+  {
     entry->value = (long)val;
     return;
   }
@@ -763,15 +746,16 @@ static void hash_table_set(const char *name, unsigned long val,
   /* Expand if necessary
    * Grow until the element has been added
    */
-  do {
+  do
+  {
     hash_table_maybe_grow(hash_table->n + 1, hash_table);
-  } while (hash_table_insert(hash, (long)val, hash_table) !=
-           HASH_TABLE_SUCCESS);
+  }
+  while (hash_table_insert(hash, (long)val, hash_table) != HASH_TABLE_SUCCESS);
 }
 
-static long hash_table_get(const char *name, hash_table_t *hash_table) {
-  hash_table_entry_t *ret =
-      hash_table_find(hash_djb2((const unsigned char *)(name)), hash_table);
+static long hash_table_get(const char* name, hash_table_t* hash_table)
+{
+  hash_table_entry_t* ret = hash_table_find(hash_djb2((const unsigned char*)(name)), hash_table);
   return ret->value;
 }
 
@@ -781,7 +765,7 @@ static tinyobj_material_t *tinyobj_material_add(tinyobj_material_t *prev,
   tinyobj_material_t *dst;
   unsigned long num_bytes = sizeof(tinyobj_material_t) * num_materials;
   dst = (tinyobj_material_t *)TINYOBJ_REALLOC_SIZED(
-      prev, num_bytes, num_bytes + sizeof(tinyobj_material_t));
+                                      prev, num_bytes, num_bytes + sizeof(tinyobj_material_t));
 
   dst[num_materials] = (*new_mat); /* Just copy pointer for char* members */
   return dst;
@@ -804,8 +788,8 @@ typedef struct {
 } LineInfo;
 
 /* Find '\n' and create line data. */
-static int get_line_infos(const char *buf, unsigned long buf_len,
-                          LineInfo **line_infos, unsigned long *num_lines) {
+static int get_line_infos(const char *buf, unsigned long buf_len, LineInfo **line_infos, unsigned long *num_lines)
+{
   unsigned long i = 0;
   unsigned long end_idx = buf_len;
   unsigned long prev_pos = 0;
@@ -820,11 +804,11 @@ static int get_line_infos(const char *buf, unsigned long buf_len,
     }
   }
   /* The last char from the input may not be a line
-   * ending character so add an extra line if there
-   * are more characters after the last line ending
-   * that was found. */
+    * ending character so add an extra line if there
+    * are more characters after the last line ending
+    * that was found. */
   if (end_idx - last_line_ending > 0) {
-    (*num_lines)++;
+      (*num_lines)++;
   }
 
   if (*num_lines == 0) return TINYOBJ_ERROR_EMPTY;
@@ -848,10 +832,10 @@ static int get_line_infos(const char *buf, unsigned long buf_len,
   return 0;
 }
 
-static int tinyobj_parse_and_index_mtl_file(
-    tinyobj_material_t **materials_out, unsigned long *num_materials_out,
-    const char *mtl_filename, const char *obj_filename,
-    file_reader_callback file_reader, void *ctx, hash_table_t *material_table) {
+static int tinyobj_parse_and_index_mtl_file(tinyobj_material_t **materials_out,
+                                            unsigned long *num_materials_out,
+                                            const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader, void *ctx,
+                                            hash_table_t* material_table) {
   tinyobj_material_t material;
   unsigned long num_materials = 0;
   tinyobj_material_t *materials = NULL;
@@ -879,7 +863,7 @@ static int tinyobj_parse_and_index_mtl_file(
   if (buf == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
 
   if (get_line_infos(buf, len, &line_infos, &num_lines) != 0) {
-    TINYOBJ_FREE(line_infos);
+		TINYOBJ_FREE(line_infos);
     return TINYOBJ_ERROR_EMPTY;
   }
 
@@ -930,7 +914,7 @@ static int tinyobj_parse_and_index_mtl_file(
 #else
       sscanf(token, "%s", namebuf);
 #endif
-      material.name = my_strdup(namebuf, (unsigned long)(line_end - token));
+      material.name = my_strdup(namebuf, (unsigned long) (line_end - token));
 
       /* Add material to material table */
       if (material_table)
@@ -1031,71 +1015,63 @@ static int tinyobj_parse_and_index_mtl_file(
     /* ambient texture */
     if ((0 == strncmp(token, "map_Ka", 6)) && IS_SPACE(token[6])) {
       token += 7;
-      material.ambient_texname =
-          my_strdup(token, (unsigned long)(line_end - token));
+      material.ambient_texname = my_strdup(token, (unsigned long) (line_end - token));
       continue;
     }
 
     /* diffuse texture */
     if ((0 == strncmp(token, "map_Kd", 6)) && IS_SPACE(token[6])) {
       token += 7;
-      material.diffuse_texname =
-          my_strdup(token, (unsigned long)(line_end - token));
+      material.diffuse_texname = my_strdup(token, (unsigned long) (line_end - token));
       continue;
     }
 
     /* specular texture */
     if ((0 == strncmp(token, "map_Ks", 6)) && IS_SPACE(token[6])) {
       token += 7;
-      material.specular_texname =
-          my_strdup(token, (unsigned long)(line_end - token));
+      material.specular_texname = my_strdup(token, (unsigned long) (line_end - token));
       continue;
     }
 
     /* specular highlight texture */
     if ((0 == strncmp(token, "map_Ns", 6)) && IS_SPACE(token[6])) {
       token += 7;
-      material.specular_highlight_texname =
-          my_strdup(token, (unsigned long)(line_end - token));
+      material.specular_highlight_texname = my_strdup(token, (unsigned long) (line_end - token));
       continue;
     }
 
     /* bump texture */
     if ((0 == strncmp(token, "map_bump", 8)) && IS_SPACE(token[8])) {
       token += 9;
-      material.bump_texname =
-          my_strdup(token, (unsigned long)(line_end - token));
+      material.bump_texname = my_strdup(token, (unsigned long) (line_end - token));
       continue;
     }
 
     /* alpha texture */
     if ((0 == strncmp(token, "map_d", 5)) && IS_SPACE(token[5])) {
       token += 6;
-      material.alpha_texname =
-          my_strdup(token, (unsigned long)(line_end - token));
+      material.alpha_texname = my_strdup(token, (unsigned long) (line_end - token));
       continue;
     }
 
     /* bump texture */
     if ((0 == strncmp(token, "bump", 4)) && IS_SPACE(token[4])) {
       token += 5;
-      material.bump_texname =
-          my_strdup(token, (unsigned long)(line_end - token));
+      material.bump_texname = my_strdup(token, (unsigned long) (line_end - token));
       continue;
     }
 
     /* displacement texture */
     if ((0 == strncmp(token, "disp", 4)) && IS_SPACE(token[4])) {
       token += 5;
-      material.displacement_texname =
-          my_strdup(token, (unsigned long)(line_end - token));
+      material.displacement_texname = my_strdup(token, (unsigned long) (line_end - token));
       continue;
     }
 
     /* @todo { unknown parameter } */
   }
 
-  TINYOBJ_FREE(line_infos);
+	TINYOBJ_FREE(line_infos);
 
   if (material.name) {
     /* Flush last material element */
@@ -1111,12 +1087,11 @@ static int tinyobj_parse_and_index_mtl_file(
 
 int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                            unsigned long *num_materials_out,
-                           const char *mtl_filename, const char *obj_filename,
-                           file_reader_callback file_reader, void *ctx) {
-  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out,
-                                          mtl_filename, obj_filename,
-                                          file_reader, ctx, NULL);
+                           const char *mtl_filename, const char *obj_filename, file_reader_callback file_reader,
+                           void *ctx) {
+  return tinyobj_parse_and_index_mtl_file(materials_out, num_materials_out, mtl_filename, obj_filename, file_reader, ctx, NULL);
 }
+
 
 typedef enum {
   COMMAND_EMPTY,
@@ -1284,7 +1259,7 @@ static int parseLine(Command *command, const char *p, unsigned long p_len,
     skip_space(&token);
     command->material_name = p + (token - linebuf);
     command->material_name_len = (unsigned int)length_until_newline(
-        token, (p_len - (unsigned long)(token - linebuf)) + 1);
+                                                                    token, (p_len - (unsigned long)(token - linebuf)) + 1);
     command->type = COMMAND_USEMTL;
 
     return 1;
@@ -1297,10 +1272,9 @@ static int parseLine(Command *command, const char *p, unsigned long p_len,
 
     skip_space(&token);
     command->mtllib_name = p + (token - linebuf);
-    command->mtllib_name_len =
-        (unsigned int)length_until_newline(
-            token, p_len - (unsigned long)(token - linebuf)) +
-        1;
+    command->mtllib_name_len = (unsigned int)length_until_newline(
+                                                                  token, p_len - (unsigned long)(token - linebuf)) +
+      1;
     command->type = COMMAND_MTLLIB;
 
     return 1;
@@ -1312,10 +1286,9 @@ static int parseLine(Command *command, const char *p, unsigned long p_len,
     token += 2;
 
     command->group_name = p + (token - linebuf);
-    command->group_name_len =
-        (unsigned int)length_until_newline(
-            token, p_len - (unsigned long)(token - linebuf)) +
-        1;
+    command->group_name_len = (unsigned int)length_until_newline(
+                                                                 token, p_len - (unsigned long)(token - linebuf)) +
+      1;
     command->type = COMMAND_G;
 
     return 1;
@@ -1327,10 +1300,9 @@ static int parseLine(Command *command, const char *p, unsigned long p_len,
     token += 2;
 
     command->object_name = p + (token - linebuf);
-    command->object_name_len =
-        (unsigned int)length_until_newline(
-            token, p_len - (unsigned long)(token - linebuf)) +
-        1;
+    command->object_name_len = (unsigned int)length_until_newline(
+                                                                  token, p_len - (unsigned long)(token - linebuf)) +
+      1;
     command->type = COMMAND_O;
 
     return 1;
@@ -1339,36 +1311,35 @@ static int parseLine(Command *command, const char *p, unsigned long p_len,
   return 0;
 }
 
-static unsigned long basename_len(const char *filename,
-                                  unsigned long filename_length) {
+static unsigned long basename_len(const char *filename, unsigned long filename_length) {
   /* Count includes NUL terminator. */
   const char *p = &filename[filename_length - 1];
   unsigned long count = 1;
 
-/* On Windows, the directory delimiter is '\' and both it and '/' is
- * reserved by the filesystem. On *nix platforms, only the '/' character
- * is reserved, so account for the two cases separately. */
-#if _WIN32
-  while (p[-1] != '/' && p[-1] != '\\') {
-    if (p == filename) {
-      count = filename_length;
-      return count;
+  /* On Windows, the directory delimiter is '\' and both it and '/' is
+   * reserved by the filesystem. On *nix platforms, only the '/' character 
+   * is reserved, so account for the two cases separately. */
+  #if _WIN32
+    while (p[-1] != '/' && p[-1] != '\\') {
+      if (p == filename) {
+        count = filename_length;
+        return count;
+      }
+      count++;
+      p--;
     }
-    count++;
-    p--;
-  }
-  p++;
-  return count;
-#else
-  while (*(--p) != '/') {
-    if (p == filename) {
-      count = filename_length;
-      return count;
+    p++;
+    return count;
+  #else
+    while (*(--p) != '/') {
+      if (p == filename) {
+        count = filename_length;
+        return count;
+      }
+      count++;
     }
-    count++;
-  }
-  return count;
-#endif
+    return count;
+  #endif
 }
 
 static char *generate_mtl_filename(const char *obj_filename,
@@ -1386,13 +1357,11 @@ static char *generate_mtl_filename(const char *obj_filename,
 
   /* Calculate required size of mtl_filename and allocate */
   obj_basename_length = basename_len(obj_filename, obj_filename_length);
-  mtl_filename_length =
-      (obj_filename_length - obj_basename_length) + mtllib_name_length;
+  mtl_filename_length = (obj_filename_length - obj_basename_length) + mtllib_name_length;
   mtl_filename = (char *)TINYOBJ_MALLOC(mtl_filename_length);
 
   /* Copy over the obj's path */
-  memcpy(mtl_filename, obj_filename,
-         (obj_filename_length - obj_basename_length));
+  memcpy(mtl_filename, obj_filename, (obj_filename_length - obj_basename_length));
 
   /* Overwrite the obj basename with the mtllib name, filling the string */
   p = &mtl_filename[mtl_filename_length - mtllib_name_length];
@@ -1401,10 +1370,8 @@ static char *generate_mtl_filename(const char *obj_filename,
 }
 
 int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
-                      unsigned long *num_shapes,
-                      tinyobj_material_t **materials_out,
-                      unsigned long *num_materials_out,
-                      const char *obj_filename,
+                      unsigned long *num_shapes, tinyobj_material_t **materials_out,
+                      unsigned long *num_materials_out, const char *obj_filename,
                       file_reader_callback file_reader, void *ctx,
                       unsigned int flags) {
   LineInfo *line_infos = NULL;
@@ -1426,7 +1393,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
   char *buf = NULL;
   unsigned long len = 0;
-  file_reader(ctx, obj_filename, /* is_mtl */ 0, obj_filename, &buf, &len);
+  file_reader(ctx, obj_filename, /* is_mtl */0, obj_filename, &buf, &len);
 
   if (len < 1) return TINYOBJ_ERROR_INVALID_PARAMETER;
   if (attrib == NULL) return TINYOBJ_ERROR_INVALID_PARAMETER;
@@ -1487,12 +1454,11 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     unsigned long mtllib_name_len = 0;
     int ret;
 
-    mtllib_name_len =
-        length_until_line_feed(commands[mtllib_line_index].mtllib_name,
-                               commands[mtllib_line_index].mtllib_name_len);
+    mtllib_name_len = length_until_line_feed(commands[mtllib_line_index].mtllib_name,
+                                             commands[mtllib_line_index].mtllib_name_len);
 
-    mtllib_name =
-        my_strndup(commands[mtllib_line_index].mtllib_name, mtllib_name_len);
+    mtllib_name = my_strndup(commands[mtllib_line_index].mtllib_name,
+                             mtllib_name_len);
 
     /* allow for NUL terminator */
     mtllib_name_len++;
@@ -1501,12 +1467,12 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
 
     ret = tinyobj_parse_and_index_mtl_file(&materials, &num_materials,
                                            mtl_filename, obj_filename,
-                                           file_reader, ctx, &material_table);
+                                           file_reader, ctx,
+                                           &material_table);
 
     if (ret != TINYOBJ_SUCCESS) {
       /* warning. */
-      fprintf(stderr, "TINYOBJ: Failed to parse material file '%s': %d\n",
-              mtl_filename, ret);
+      fprintf(stderr, "TINYOBJ: Failed to parse material file '%s': %d\n", mtl_filename, ret);
     }
     TINYOBJ_FREE(mtl_filename);
     TINYOBJ_FREE(mtllib_name);
@@ -1530,7 +1496,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     attrib->texcoords = (float *)TINYOBJ_MALLOC(sizeof(float) * num_vt * 2);
     attrib->num_texcoords = (unsigned int)num_vt;
     attrib->faces = (tinyobj_vertex_index_t *)TINYOBJ_MALLOC(
-        sizeof(tinyobj_vertex_index_t) * num_f);
+                                                     sizeof(tinyobj_vertex_index_t) * num_f);
     attrib->num_faces = (unsigned int)num_f;
     attrib->face_num_verts = (int *)TINYOBJ_MALLOC(sizeof(int) * num_faces);
     attrib->material_ids = (int *)TINYOBJ_MALLOC(sizeof(int) * num_faces);
@@ -1554,18 +1520,16 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
         }
         }
         */
-        if (commands[i].material_name && commands[i].material_name_len > 0) {
+        if (commands[i].material_name &&
+           commands[i].material_name_len >0)
+        {
           /* Create a null terminated string */
-          char *material_name_null_term =
-              (char *)TINYOBJ_MALLOC(commands[i].material_name_len + 1);
-          memcpy((void *)material_name_null_term,
-                 (const void *)commands[i].material_name,
-                 commands[i].material_name_len);
+          char* material_name_null_term = (char*) TINYOBJ_MALLOC(commands[i].material_name_len + 1);
+          memcpy((void*) material_name_null_term, (const void*) commands[i].material_name, commands[i].material_name_len);
           material_name_null_term[commands[i].material_name_len] = 0;
 
           if (hash_table_exists(material_name_null_term, &material_table))
-            material_id =
-                (int)hash_table_get(material_name_null_term, &material_table);
+            material_id = (int)hash_table_get(material_name_null_term, &material_table);
           else
             material_id = -1;
 
@@ -1633,8 +1597,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
     /* Allocate array of shapes with maximum possible size(+1 for unnamed
      * group/object).
      * Actual # of shapes found in .obj is determined in the later */
-    (*shapes) =
-        (tinyobj_shape_t *)TINYOBJ_MALLOC(sizeof(tinyobj_shape_t) * (n + 1));
+    (*shapes) = (tinyobj_shape_t*)TINYOBJ_MALLOC(sizeof(tinyobj_shape_t) * (n + 1));
 
     for (i = 0; i < num_lines; i++) {
       if (commands[i].type == COMMAND_O || commands[i].type == COMMAND_G) {
@@ -1656,7 +1619,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
           if (shape_idx == 0) {
             /* 'o' or 'g' after some 'v' lines. */
             (*shapes)[shape_idx].name = my_strndup(
-                prev_shape_name, prev_shape_name_len); /* may be NULL */
+                                                   prev_shape_name, prev_shape_name_len); /* may be NULL */
             (*shapes)[shape_idx].face_offset = prev_shape.face_offset;
             (*shapes)[shape_idx].length = face_count - prev_face_offset;
             shape_idx++;
@@ -1666,7 +1629,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
           } else {
             if ((face_count - prev_face_offset) > 0) {
               (*shapes)[shape_idx].name =
-                  my_strndup(prev_shape_name, prev_shape_name_len);
+                my_strndup(prev_shape_name, prev_shape_name_len);
               (*shapes)[shape_idx].face_offset = prev_face_offset;
               (*shapes)[shape_idx].length = face_count - prev_face_offset;
               shape_idx++;
@@ -1689,7 +1652,7 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
       unsigned long length = face_count - prev_shape_face_offset;
       if (length > 0) {
         (*shapes)[shape_idx].name =
-            my_strndup(prev_shape_name, prev_shape_name_len);
+          my_strndup(prev_shape_name, prev_shape_name_len);
         (*shapes)[shape_idx].face_offset = prev_face_offset;
         (*shapes)[shape_idx].length = face_count - prev_face_offset;
         shape_idx++;
@@ -1755,12 +1718,9 @@ void tinyobj_materials_free(tinyobj_material_t *materials,
 
   for (i = 0; i < num_materials; i++) {
     if (materials[i].name) TINYOBJ_FREE(materials[i].name);
-    if (materials[i].ambient_texname)
-      TINYOBJ_FREE(materials[i].ambient_texname);
-    if (materials[i].diffuse_texname)
-      TINYOBJ_FREE(materials[i].diffuse_texname);
-    if (materials[i].specular_texname)
-      TINYOBJ_FREE(materials[i].specular_texname);
+    if (materials[i].ambient_texname) TINYOBJ_FREE(materials[i].ambient_texname);
+    if (materials[i].diffuse_texname) TINYOBJ_FREE(materials[i].diffuse_texname);
+    if (materials[i].specular_texname) TINYOBJ_FREE(materials[i].specular_texname);
     if (materials[i].specular_highlight_texname)
       TINYOBJ_FREE(materials[i].specular_highlight_texname);
     if (materials[i].bump_texname) TINYOBJ_FREE(materials[i].bump_texname);
