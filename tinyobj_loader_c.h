@@ -117,7 +117,7 @@ typedef void (*file_reader_callback)(void *ctx, const char *filename, int is_mtl
  * @param[in] flags combination of TINYOBJ_FLAG_***
  *
  * Returns TINYOBJ_SUCCESS if things goes well.
- * Returns TINYOBJ_ERR_*** when there is an error.
+ * Returns TINYOBJ_ERROR_*** when there is an error.
  */
 extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
                              size_t *num_shapes, tinyobj_material_t **materials,
@@ -134,7 +134,7 @@ extern int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
  * @param[in[ ctx Context pointer passed to the file_reader callack.
 
  * Returns TINYOBJ_SUCCESS if things goes well.
- * Returns TINYOBJ_ERR_*** when there is an error.
+ * Returns TINYOBJ_ERROR_*** when there is an error.
  */
 extern int tinyobj_parse_mtl_file(tinyobj_material_t **materials_out,
                                   size_t *num_materials_out,
