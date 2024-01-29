@@ -1647,7 +1647,11 @@ int tinyobj_parse_obj(tinyobj_attrib_t *attrib, tinyobj_shape_t **shapes,
         }
       }
       if (commands[i].type == COMMAND_F) {
-        face_count++;
+        if (flags & TINYOBJ_FLAG_TRIANGULATE) {
+          face_count += commands[i].num_f_num_verts;
+        } else {
+          face_count++;
+        }
       }
     }
 
