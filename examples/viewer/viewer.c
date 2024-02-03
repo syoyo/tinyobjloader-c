@@ -41,12 +41,13 @@ static DrawObject gDrawObject;
 static int width = 768;
 static int height = 768;
 
-static bool use_colors = false;
+static enum { COLOR_FROM_NORMALS, COLOR_FROM_MATERIAL, COLOR_FROM_SHAPE, __COLOR_FROM_LAST } color_source = COLOR_FROM_NORMALS;
 static bool draw_wireframe = true;
 
 static const size_t OBJ_SIZE = sizeof(float) * 3 // pos
 	+ sizeof(float) * 3 // normal
 	+ sizeof(float) * 3 // color (based on normal)
+	+ sizeof(float) * 3 // color (based on shape)
 	+ sizeof(float) * 3; // color from material file.
 
 static float prevMouseX, prevMouseY;
@@ -364,6 +365,26 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
       face_offset += (size_t)attrib.face_num_verts[i];
     }
 
+    for (i = 0; i < num_shapes; i++)
+    {
+      /* Get unique color based on shape index */
+      float r = (cosf(6.283185f * ((float)i / num_shapes + 0.0f / 3.0f)) + 1.0f) / 2.0f;
+      float g = (cosf(6.283185f * ((float)i / num_shapes + 2.0f / 3.0f)) + 1.0f) / 2.0f;
+      float b = (cosf(6.283185f * ((float)i / num_shapes + 1.0f / 3.0f)) + 1.0f) / 2.0f;
+      unsigned int s;
+      for (s = 0; s < shapes[i].length; s++)
+      {
+        unsigned int f = shapes[i].face_offset + s;
+        int k;
+        for(k = 0; k < 3; k++)
+        {
+          vb[(3 * f + k) * stride + 12] = r;
+          vb[(3 * f + k) * stride + 13] = g;
+          vb[(3 * f + k) * stride + 14] = b;
+        }
+      }
+    }
+
     o.vb = 0;
     o.numTriangles = 0;
     if (num_triangles > 0) {
@@ -431,7 +452,8 @@ static void keyboardFunc(GLFWwindow* window, int key, int scancode, int action,
 
     if (key == GLFW_KEY_Q || key == GLFW_KEY_ESCAPE)
       glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key == GLFW_KEY_C) use_colors = !use_colors;
+    if (key == GLFW_KEY_C && ++color_source >= __COLOR_FROM_LAST)
+      color_source = COLOR_FROM_NORMALS;
     if (key == GLFW_KEY_W) draw_wireframe = !draw_wireframe;
   }
 }
@@ -504,10 +526,10 @@ static void Draw(const DrawObject* draw_object) {
     glEnableClientState(GL_COLOR_ARRAY);
     glVertexPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)0);
     glNormalPointer(GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 3));
-    if (use_colors) {
-      glColorPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 9));
-    } else {
-      glColorPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 6));
+    switch (color_source) {
+      case COLOR_FROM_NORMALS: glColorPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 6)); break;
+      case COLOR_FROM_MATERIAL: glColorPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 9)); break;
+      case COLOR_FROM_SHAPE: glColorPointer(3, GL_FLOAT, OBJ_SIZE, (const void*)(sizeof(float) * 12)); break;
     }
     glDrawArrays(GL_TRIANGLES, 0, 3 * draw_object->numTriangles);
     CheckErrors("drawarrays");
