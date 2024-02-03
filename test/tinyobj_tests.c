@@ -34,6 +34,7 @@ TEST_LIST = {
 
     { "crlf_string",  test_tinyobj_crlf_string },
     { "negative_exponent_issue26",  test_tinyobj_negative_exponent },
+    { "shapes_triangulation",  test_tinyobj_shapes_triangulation },
 
     { 0 } // required by acutest
 };

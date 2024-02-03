@@ -83,3 +83,44 @@ void test_tinyobj_negative_exponent(void)
         TEST_CHECK(float_equals(attrib.vertices[2], 2.0e-0f));
     }
 }
+
+void test_tinyobj_shapes_triangulation(void)
+{
+    {
+        const char * filename = "fixtures/shapes-triangulation.obj";
+
+        tinyobj_shape_t * shape = NULL;
+        tinyobj_material_t * material = NULL;
+        tinyobj_attrib_t attrib;
+
+        unsigned long num_shapes;
+        unsigned long num_materials;
+
+        tinyobj_attrib_init(&attrib);
+
+        int result = tinyobj_parse_obj(&attrib, &shape, &num_shapes, &material, &num_materials, filename, loadFile, NULL, TINYOBJ_FLAG_TRIANGULATE);
+
+        TEST_CHECK(result == TINYOBJ_SUCCESS);
+
+        TEST_CHECK(num_shapes == 9);
+
+        TEST_CHECK(shape[0].face_offset == 0);
+        TEST_CHECK(shape[0].length == 2);
+        TEST_CHECK(shape[1].face_offset == 2);
+        TEST_CHECK(shape[1].length == 3);
+        TEST_CHECK(shape[2].face_offset == 5);
+        TEST_CHECK(shape[2].length == 2);
+        TEST_CHECK(shape[3].face_offset == 7);
+        TEST_CHECK(shape[3].length == 2);
+        TEST_CHECK(shape[4].face_offset == 9);
+        TEST_CHECK(shape[4].length == 1);
+        TEST_CHECK(shape[5].face_offset == 10);
+        TEST_CHECK(shape[5].length == 2);
+        TEST_CHECK(shape[6].face_offset == 12);
+        TEST_CHECK(shape[6].length == 2);
+        TEST_CHECK(shape[7].face_offset == 14);
+        TEST_CHECK(shape[7].length == 2);
+        TEST_CHECK(shape[8].face_offset == 16);
+        TEST_CHECK(shape[8].length == 2);
+    }
+}
