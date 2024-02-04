@@ -376,7 +376,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
       {
         unsigned int f = shapes[i].face_offset + s;
         int k;
-        for(k = 0; k < 3; k++)
+        for(k = 0; k < attrib.face_num_verts[f]; k++)
         {
           vb[(3 * f + k) * stride + 12] = r;
           vb[(3 * f + k) * stride + 13] = g;
