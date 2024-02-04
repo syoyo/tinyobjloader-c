@@ -365,6 +365,7 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
       face_offset += (size_t)attrib.face_num_verts[i];
     }
 
+    face_offset = 0;
     for (i = 0; i < num_shapes; i++)
     {
       /* Get unique color based on shape index */
@@ -378,10 +379,11 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
         size_t k;
         for(k = 0; k < (size_t)attrib.face_num_verts[f]; k++)
         {
-          vb[(3 * f + k) * stride + 12] = r;
-          vb[(3 * f + k) * stride + 13] = g;
-          vb[(3 * f + k) * stride + 14] = b;
+          vb[(face_offset + k) * stride + 12] = r;
+          vb[(face_offset + k) * stride + 13] = g;
+          vb[(face_offset + k) * stride + 14] = b;
         }
+        face_offset += k;
       }
     }
 
