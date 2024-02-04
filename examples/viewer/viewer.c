@@ -371,12 +371,12 @@ static int LoadObjAndConvert(float bmin[3], float bmax[3],
       float r = (cosf(6.283185f * ((float)i / num_shapes + 0.0f / 3.0f)) + 1.0f) / 2.0f;
       float g = (cosf(6.283185f * ((float)i / num_shapes + 2.0f / 3.0f)) + 1.0f) / 2.0f;
       float b = (cosf(6.283185f * ((float)i / num_shapes + 1.0f / 3.0f)) + 1.0f) / 2.0f;
-      unsigned int s;
-      for (s = 0; s < shapes[i].length; s++)
+      size_t s;
+      for (s = 0; s < (size_t)shapes[i].length; s++)
       {
-        unsigned int f = shapes[i].face_offset + s;
-        int k;
-        for(k = 0; k < attrib.face_num_verts[f]; k++)
+        size_t f = (size_t)shapes[i].face_offset + s;
+        size_t k;
+        for(k = 0; k < (size_t)attrib.face_num_verts[f]; k++)
         {
           vb[(3 * f + k) * stride + 12] = r;
           vb[(3 * f + k) * stride + 13] = g;
