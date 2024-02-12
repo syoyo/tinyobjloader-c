@@ -30,7 +30,7 @@ static void loadFile(void *ctx, const char * filename, const int is_mtl, const c
         read_size = fread(*buffer, sizeof(char), (size_t) string_size, handler);
         (*buffer)[string_size] = '\0';
         if (string_size != read_size) {
-            free(buffer);
+            free(*buffer);
             *buffer = NULL;
         }
         fclose(handler);
