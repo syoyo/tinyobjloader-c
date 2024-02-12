@@ -1386,7 +1386,7 @@ static void find_coreGL(void) {
      * https://github.com/elmindreda/greg/blob/master/templates/greg.c.in#L176
      * https://github.com/glfw/glfw/blob/master/src/context.c#L36
      */
-    int i, major, minor;
+    int i, ret, major, minor;
 
     const char* version;
     const char* prefixes[] = {
@@ -1409,10 +1409,12 @@ static void find_coreGL(void) {
 
 /* PR #18 */
 #ifdef _MSC_VER
-    sscanf_s(version, "%d.%d", &major, &minor);
+    ret = sscanf_s(version, "%d.%d", &major, &minor);
 #else
-    sscanf(version, "%d.%d", &major, &minor);
+    ret = sscanf(version, "%d.%d", &major, &minor);
 #endif
+
+    if (ret != 2) return;
 
     GLVersion.major = major; GLVersion.minor = minor;
     max_loaded_major = major; max_loaded_minor = minor;
