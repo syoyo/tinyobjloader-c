@@ -3,5 +3,6 @@
 
 void test_tinyobj_crlf_string(void);
 void test_tinyobj_negative_exponent(void);
+void test_tinyobj_shapes_triangulation(void);
 
 #endif
