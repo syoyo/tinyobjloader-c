@@ -935,7 +935,7 @@ void test_hash_table_get(void)
     destroy_hash_table(&table);
 }
 
-void test_hash_table_maybe_grow(void)
+void test_hash_table_grow(void)
 {
     // It should be possible for the table to grow, preserving all previous values
     hash_table_t table;
@@ -992,6 +992,6 @@ TEST_LIST = {
     { "hash_table_set",         test_hash_table_set },
     { "hash_table_exists",      test_hash_table_exists },
     { "hash_table_get",         test_hash_table_get },
-    { "hash_table_maybe_grow",  test_hash_table_maybe_grow },
+    { "hash_table_grow",        test_hash_table_grow },
     { 0 } // required by acutest
 };

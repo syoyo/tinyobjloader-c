@@ -701,16 +701,13 @@ static hash_table_entry_t* hash_table_find(unsigned long hash, hash_table_t* has
   return NULL;
 }
 
-static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
+static void hash_table_grow(hash_table_t* hash_table)
 {
   size_t new_capacity;
   hash_table_t new_hash_table;
   size_t i;
 
-  if (new_n <= hash_table->capacity) {
-    return;
-  }
-  new_capacity = 2 * ((2 * hash_table->capacity) > new_n ? hash_table->capacity : new_n);
+  new_capacity = 2 * hash_table->capacity;
   /* Create a new hash table. We're not calling create_hash_table because we want to realloc the hash array */
   new_hash_table.hashes = hash_table->hashes = (unsigned long*) TINYOBJ_REALLOC_SIZED(
       (void*) hash_table->hashes, sizeof(unsigned long) * hash_table->capacity, sizeof(unsigned long) * new_capacity);
@@ -751,11 +748,9 @@ static void hash_table_set(const char* name, size_t val, hash_table_t* hash_tabl
   /* Expand if necessary
    * Grow until the element has been added
    */
-  do
-  {
-    hash_table_maybe_grow(hash_table->n + 1, hash_table);
+  while (hash_table_insert(hash, (long)val, hash_table) != HASH_TABLE_SUCCESS) {
+    hash_table_grow(hash_table);
   }
-  while (hash_table_insert(hash, (long)val, hash_table) != HASH_TABLE_SUCCESS);
 }
 
 static long hash_table_get(const char* name, hash_table_t* hash_table)

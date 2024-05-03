@@ -83,8 +83,26 @@ void test_tinyobj_negative_exponent(void)
     }
 }
 
+void test_hash_table_infinity_loop(void)
+{
+    hash_table_t table;
+    create_hash_table(10, &table);
+
+    hash_table_set("bch-beach-01_png", 0, &table);
+    hash_table_set("bch-grassfringe_png", 0, &table);
+    hash_table_set("bch-leafyground-hang-2x1_png", 0, &table);
+    hash_table_set("bch-plankwood_png", 0, &table);
+    hash_table_set("bluelight_png", 0, &table);
+    hash_table_set("cmn-precursor-blue_png", 0, &table);
+    hash_table_set("cmn-precursor-circuitpattern-01_png", 0, &table);
+    hash_table_set("cmn-precursor-metal-edge-01_png", 0, &table);
+
+    destroy_hash_table(&table);
+}
+
 TEST_LIST = {
     { "crlf_string",                test_tinyobj_crlf_string },
     { "negative_exponent_issue26",  test_tinyobj_negative_exponent },
+    { "hash_table_infinity_loop",   test_hash_table_infinity_loop },
     { 0 } // required by acutest
 };
