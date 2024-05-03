@@ -810,7 +810,7 @@ static int get_line_infos(const char *buf, size_t buf_len, LineInfo **line_infos
     * ending character so add an extra line if there
     * are more characters after the last line ending
     * that was found. */
-  if (end_idx - last_line_ending > 0) {
+  if (end_idx - last_line_ending > 1) {
       (*num_lines)++;
   }
 
@@ -827,7 +827,7 @@ static int get_line_infos(const char *buf, size_t buf_len, LineInfo **line_infos
       line_no++;
     }
   }
-  if (end_idx - last_line_ending > 0) {
+  if (end_idx - last_line_ending > 1) {
     (*line_infos)[line_no].pos = prev_pos;
     (*line_infos)[line_no].len = end_idx - 1 - last_line_ending;
   }

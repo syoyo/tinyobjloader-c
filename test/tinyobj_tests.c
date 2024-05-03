@@ -15,6 +15,7 @@ TEST_LIST = {
     { "skip_space_and_cr",      test_skip_space_and_cr },
     { "until_space",            test_until_space },
     { "length_until_newline",   test_length_until_newline },
+    { "num_lines",              test_num_lines },
     { "my_atoi",                test_my_atoi },
     { "fix_index",              test_fix_index },
     { "parseRawTriple",         test_parseRawTriple },
