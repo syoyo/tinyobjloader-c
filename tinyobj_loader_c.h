@@ -721,8 +721,10 @@ static void hash_table_maybe_grow(size_t new_n, hash_table_t* hash_table)
   /* Rehash */
   for (i = 0; i < hash_table->capacity; i++)
   {
-    hash_table_entry_t* entry = hash_table_find(hash_table->hashes[i], hash_table);
-    hash_table_insert_value(hash_table->hashes[i], entry->value, &new_hash_table);
+    hash_table_entry_t* entry = &hash_table->entries[i];
+    if (entry->filled) {
+            hash_table_insert_value(entry->hash, entry->value, &new_hash_table);
+    }
   }
 
   TINYOBJ_FREE(hash_table->entries);
