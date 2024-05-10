@@ -140,6 +140,56 @@ void test_length_until_newline(void)
     }
 }
 
+void test_num_lines(void) {
+	{
+		char buf[] = "";
+		LineInfo *line_infos = NULL;
+		size_t num_lines = 0;
+		get_line_infos(buf, sizeof(buf) - 1, &line_infos, &num_lines);
+		TEST_CHECK(num_lines == 0);
+	}
+
+	{
+		char buf[] = "hello";
+		LineInfo *line_infos = NULL;
+		size_t num_lines = 0;
+		get_line_infos(buf, sizeof(buf) - 1, &line_infos, &num_lines);
+		TEST_CHECK(num_lines == 1);
+	}
+
+	{
+		char buf[] = "\n\n";
+		LineInfo *line_infos = NULL;
+		size_t num_lines = 0;
+		get_line_infos(buf, sizeof(buf) - 1, &line_infos, &num_lines);
+		TEST_CHECK(num_lines == 2);
+	}
+
+	{
+		char buf[] = "a\r\na\na\0";
+		LineInfo *line_infos = NULL;
+		size_t num_lines = 0;
+		get_line_infos(buf, sizeof(buf) - 1, &line_infos, &num_lines);
+		TEST_CHECK(num_lines == 3);
+	}
+
+	{
+		char buf[] = "hello\nworld\n";
+		LineInfo *line_infos = NULL;
+		size_t num_lines = 0;
+		get_line_infos(buf, sizeof(buf) - 1, &line_infos, &num_lines);
+		TEST_CHECK(num_lines == 2);
+	}
+
+	{
+		char buf[] = "hello\nworld\n!";
+		LineInfo *line_infos = NULL;
+		size_t num_lines = 0;
+		get_line_infos(buf, sizeof(buf) - 1, &line_infos, &num_lines);
+		TEST_CHECK(num_lines == 3);
+	}
+}
+
 void test_my_atoi(void)
 {
     // Results for input strings should become corresponding ints.

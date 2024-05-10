@@ -5,6 +5,7 @@ void test_skip_space(void);
 void test_skip_space_and_cr(void);
 void test_until_space(void);
 void test_length_until_newline(void);
+void test_num_lines(void);
 void test_my_atoi(void);
 void test_fix_index(void);
 void test_parseRawTriple(void);
