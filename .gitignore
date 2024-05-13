@@ -1,4 +1,4 @@
 examples/viewer/viewer
-test/tinyobj_tests
+test/tinyobj_*_tests
 *.dSYM
 *.o

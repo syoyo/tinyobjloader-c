@@ -1,6 +1,5 @@
-#define TEST_NO_MAIN
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
 
-#include "tinyobj_api_tests.h"
 #include "tinyobj_loader_c.h"
 #include "acutest.h"
 
@@ -113,3 +112,10 @@ void test_tinyobj_parse_obj(void)
         tinyobj_materials_free(material, num_materials);
     }
 }
+
+TEST_LIST = {
+    { "tinyobj_attrib_init",    test_tinyobj_attrib_init },
+    { "tinyobj_parse_mtl_file", test_tinyobj_parse_mtl_file },
+    { "tinyobj_parse_obj",      test_tinyobj_parse_obj },
+    { 0 } // required by acutest
+};
