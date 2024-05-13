@@ -1,13 +1,12 @@
-#define TEST_NO_MAIN
+#define TINYOBJ_LOADER_C_IMPLEMENTATION
 
-#include "tinyobj_regression_tests.h"
 #include "tinyobj_loader_c.h"
 #include "acutest.h"
 
 #include <math.h>
 #include <float.h>
 
-static int float_equals(float x, float y)
+int float_equals(float x, float y)
 {
   if (fabs(x - y) < FLT_EPSILON) {
     return 1;
@@ -16,7 +15,7 @@ static int float_equals(float x, float y)
   return 0;
 }
 
-static void loadFile(void *ctx, const char * filename, const int is_mtl, const char *obj_filename, char ** buffer, size_t * len)
+void loadFile(void *ctx, const char * filename, const int is_mtl, const char *obj_filename, char ** buffer, size_t * len)
 {
     *buffer = NULL;
     long string_size = 0, read_size = 0;
@@ -83,3 +82,27 @@ void test_tinyobj_negative_exponent(void)
         TEST_CHECK(float_equals(attrib.vertices[2], 2.0e-0f));
     }
 }
+
+void test_hash_table_infinity_loop(void)
+{
+    hash_table_t table;
+    create_hash_table(10, &table);
+
+    hash_table_set("bch-beach-01_png", 0, &table);
+    hash_table_set("bch-grassfringe_png", 0, &table);
+    hash_table_set("bch-leafyground-hang-2x1_png", 0, &table);
+    hash_table_set("bch-plankwood_png", 0, &table);
+    hash_table_set("bluelight_png", 0, &table);
+    hash_table_set("cmn-precursor-blue_png", 0, &table);
+    hash_table_set("cmn-precursor-circuitpattern-01_png", 0, &table);
+    hash_table_set("cmn-precursor-metal-edge-01_png", 0, &table);
+
+    destroy_hash_table(&table);
+}
+
+TEST_LIST = {
+    { "crlf_string",                test_tinyobj_crlf_string },
+    { "negative_exponent_issue26",  test_tinyobj_negative_exponent },
+    { "hash_table_infinity_loop",   test_hash_table_infinity_loop },
+    { 0 } // required by acutest
+};
