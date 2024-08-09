@@ -150,6 +150,7 @@ extern void tinyobj_materials_free(tinyobj_material_t *materials,
 #ifdef __cplusplus
 }
 #endif
+#endif /* TINOBJ_LOADER_C_H_ */
 
 #ifdef TINYOBJ_LOADER_C_IMPLEMENTATION
 #include <stdio.h>
@@ -1732,5 +1733,3 @@ void tinyobj_materials_free(tinyobj_material_t *materials,
   TINYOBJ_FREE(materials);
 }
 #endif /* TINYOBJ_LOADER_C_IMPLEMENTATION */
-
-#endif /* TINOBJ_LOADER_C_H_ */
