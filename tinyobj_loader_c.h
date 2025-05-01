@@ -1197,6 +1197,33 @@ static int parseLine(Command *command, const char *p, size_t p_len,
     return 1;
   }
 
+  /* line */
+  if (token[0] == 'l' && IS_SPACE((token[1]))) {
+    size_t num_f = 0;
+    
+    tinyobj_vertex_index_t f[2];
+    token += 2;
+    skip_space(&token);
+
+    while (!IS_NEW_LINE(token[0])) {
+      tinyobj_vertex_index_t vi = parseRawTriple(&token);
+      skip_space_and_cr(&token);
+
+      f[num_f] = vi;
+      num_f++;
+    }
+
+    assert(num_f == 2);
+    command->type = COMMAND_F;
+    command->f[0] = f[0];
+    command->f[1] = f[1];
+    command->num_f = 2;
+    command->f_num_verts[0] = (int)num_f;
+    command->num_f_num_verts = 1;
+
+    return 1;
+  }
+
   /* face */
   if (token[0] == 'f' && IS_SPACE((token[1]))) {
     size_t num_f = 0;
