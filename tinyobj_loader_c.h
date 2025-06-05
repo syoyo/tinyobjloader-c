@@ -218,6 +218,12 @@ static size_t length_until_newline(const char *token, size_t n) {
       break;
     }
   }
+  /* remove trailing whitespace */
+  for (; len > 0; len--) {
+    if (token[len] != ' ') {
+      break;
+    }
+  }
 
   return len;
 }
