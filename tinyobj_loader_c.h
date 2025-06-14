@@ -210,6 +210,7 @@ static size_t length_until_newline(const char *token, size_t n) {
   size_t len = 0;
 
   /* Assume token[n-1] = '\0' */
+  assert(token[n-1] == '\0');
   for (len = 0; len < n - 1; len++) {
     if (token[len] == '\n') {
       break;
@@ -217,6 +218,10 @@ static size_t length_until_newline(const char *token, size_t n) {
     if ((token[len] == '\r') && ((len < (n - 2)) && (token[len + 1] != '\n'))) {
       break;
     }
+  }
+  /* remove trailing whitespace */
+  while (len > 0 && IS_SPACE(token[len - 1])) {
+    len--;
   }
 
   return len;
@@ -1301,8 +1306,7 @@ static int parseLine(Command *command, const char *p, size_t p_len,
     skip_space(&token);
     command->mtllib_name = p + (token - linebuf);
     command->mtllib_name_len = (unsigned int)length_until_newline(
-                                                                  token, p_len - (size_t)(token - linebuf)) +
-      1;
+                                                                  token, (p_len - (size_t)(token - linebuf)) + 1);
     command->type = COMMAND_MTLLIB;
 
     return 1;
@@ -1315,8 +1319,7 @@ static int parseLine(Command *command, const char *p, size_t p_len,
 
     command->group_name = p + (token - linebuf);
     command->group_name_len = (unsigned int)length_until_newline(
-                                                                 token, p_len - (size_t)(token - linebuf)) +
-      1;
+                                                                 token, (p_len - (size_t)(token - linebuf)) + 1);
     command->type = COMMAND_G;
 
     return 1;
