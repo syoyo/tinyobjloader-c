@@ -220,7 +220,7 @@ static size_t length_until_newline(const char *token, size_t n) {
     }
   }
   /* remove trailing whitespace */
-  while (len > 0 && token[len - 1] == ' ') {
+  while (len > 0 && IS_SPACE(token[len - 1])) {
     len--;
   }
 
