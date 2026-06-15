@@ -1214,8 +1214,14 @@ static int parseLine(Command *command, const char *p, size_t p_len,
       tinyobj_vertex_index_t vi = parseRawTriple(&token);
       skip_space_and_cr(&token);
 
-      f[num_f] = vi;
-      num_f++;
+      /* Bounds-check: an OBJ face/line may list more than
+       * TINYOBJ_MAX_FACES_PER_F_LINE vertices; without this guard the write
+       * overflows the fixed-size stack array f[] (the assert below is compiled
+       * out under NDEBUG). Extra vertices are dropped to preserve memory safety. */
+      if (num_f < TINYOBJ_MAX_FACES_PER_F_LINE) {
+        f[num_f] = vi;
+        num_f++;
+      }
     }
 
     assert(num_f == 2);
@@ -1241,8 +1247,14 @@ static int parseLine(Command *command, const char *p, size_t p_len,
       tinyobj_vertex_index_t vi = parseRawTriple(&token);
       skip_space_and_cr(&token);
 
-      f[num_f] = vi;
-      num_f++;
+      /* Bounds-check: an OBJ face/line may list more than
+       * TINYOBJ_MAX_FACES_PER_F_LINE vertices; without this guard the write
+       * overflows the fixed-size stack array f[] (the assert below is compiled
+       * out under NDEBUG). Extra vertices are dropped to preserve memory safety. */
+      if (num_f < TINYOBJ_MAX_FACES_PER_F_LINE) {
+        f[num_f] = vi;
+        num_f++;
+      }
     }
 
     command->type = COMMAND_F;
@@ -1258,6 +1270,11 @@ static int parseLine(Command *command, const char *p, size_t p_len,
       assert(3 * num_f < TINYOBJ_MAX_FACES_PER_F_LINE);
 
       for (k = 2; k < num_f; k++) {
+        /* Bounds-check the triangulated output: an N-gon produces 3*(N-2)
+         * indices, which can exceed the fixed-size command->f[]. */
+        if (3 * n + 2 >= TINYOBJ_MAX_FACES_PER_F_LINE) {
+          break;
+        }
         i1 = i2;
         i2 = f[k];
         command->f[3 * n + 0] = i0;
