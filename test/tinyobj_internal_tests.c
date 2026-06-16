@@ -985,6 +985,52 @@ void test_hash_table_grow(void)
     destroy_hash_table(&table);
 }
 
+void test_parseLine_face_overflow(void)
+{
+    /* Regression for the stack-buffer-overflow fixed in parseLine(): an "f"
+     * statement that lists far more than TINYOBJ_MAX_FACES_PER_F_LINE vertices
+     * used to write past the fixed-size stack array f[] / command->f[]. The
+     * parser must cap the vertices it keeps and must never write out of bounds
+     * (the latter is what AddressSanitizer catches on the pre-fix code). */
+    const char * line =
+        "f 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 "
+        "21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40";
+
+    {
+        /* Untriangulated: kept vertex count must stay within the array. */
+        Command command;
+        int ret = parseLine(&command, line, strlen(line), /* triangulate */ 0);
+        TEST_CHECK(ret == 1);
+        TEST_CHECK(command.type == COMMAND_F);
+        TEST_CHECK(command.num_f <= TINYOBJ_MAX_FACES_PER_F_LINE);
+    }
+
+    {
+        /* Triangulated: the 3*(N-2) emitted indices must also stay within
+         * command->f[] / command->f_num_verts[]. */
+        Command command;
+        int ret = parseLine(&command, line, strlen(line), /* triangulate */ 1);
+        TEST_CHECK(ret == 1);
+        TEST_CHECK(command.type == COMMAND_F);
+        TEST_CHECK(command.num_f <= TINYOBJ_MAX_FACES_PER_F_LINE);
+        TEST_CHECK(command.num_f_num_verts <= TINYOBJ_MAX_FACES_PER_F_LINE);
+    }
+}
+
+void test_parseLine_line_overflow(void)
+{
+    /* Regression: an "l" (polyline) statement with more than two vertices used
+     * to overflow the size-2 stack array f[] in parseLine()'s line branch
+     * (e.g. "l 1 2 3" wrote f[2]). Only the first two vertices are kept and no
+     * out-of-bounds write may occur. */
+    const char * line = "l 1 2 3 4 5 6 7 8 9 10";
+    Command command;
+    int ret = parseLine(&command, line, strlen(line), /* triangulate */ 0);
+    TEST_CHECK(ret == 1);
+    TEST_CHECK(command.type == COMMAND_F);
+    TEST_CHECK(command.num_f == 2);
+}
+
 TEST_LIST = {
     { "skip_space",             test_skip_space },
     { "skip_space_and_cr",      test_skip_space_and_cr },
@@ -1007,5 +1053,7 @@ TEST_LIST = {
     { "hash_table_exists",      test_hash_table_exists },
     { "hash_table_get",         test_hash_table_get },
     { "hash_table_grow",        test_hash_table_grow },
+    { "parseLine_face_overflow", test_parseLine_face_overflow },
+    { "parseLine_line_overflow", test_parseLine_line_overflow },
     { 0 } // required by acutest
 };
