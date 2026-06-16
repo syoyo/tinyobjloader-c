@@ -1214,8 +1214,15 @@ static int parseLine(Command *command, const char *p, size_t p_len,
       tinyobj_vertex_index_t vi = parseRawTriple(&token);
       skip_space_and_cr(&token);
 
-      f[num_f] = vi;
-      num_f++;
+      /* Bounds-check: an OBJ "l" (line) statement may list more than two
+       * vertices, but this branch only keeps the first two (f[] has size 2,
+       * see the assert below). Without this guard a polyline such as
+       * "l 1 2 3" overflows the fixed-size stack array f[] (the assert is
+       * compiled out under NDEBUG). Extra vertices are dropped. */
+      if (num_f < 2) {
+        f[num_f] = vi;
+        num_f++;
+      }
     }
 
     assert(num_f == 2);
@@ -1241,8 +1248,14 @@ static int parseLine(Command *command, const char *p, size_t p_len,
       tinyobj_vertex_index_t vi = parseRawTriple(&token);
       skip_space_and_cr(&token);
 
-      f[num_f] = vi;
-      num_f++;
+      /* Bounds-check: an OBJ face/line may list more than
+       * TINYOBJ_MAX_FACES_PER_F_LINE vertices; without this guard the write
+       * overflows the fixed-size stack array f[] (the assert below is compiled
+       * out under NDEBUG). Extra vertices are dropped to preserve memory safety. */
+      if (num_f < TINYOBJ_MAX_FACES_PER_F_LINE) {
+        f[num_f] = vi;
+        num_f++;
+      }
     }
 
     command->type = COMMAND_F;
@@ -1255,9 +1268,16 @@ static int parseLine(Command *command, const char *p, size_t p_len,
       tinyobj_vertex_index_t i1;
       tinyobj_vertex_index_t i2 = f[1];
 
-      assert(3 * num_f < TINYOBJ_MAX_FACES_PER_F_LINE);
+      /* Note: the triangulated output (3*(num_f-2) indices) may exceed
+       * command->f[]; the per-iteration guard below enforces the real bound,
+       * so we no longer assert that the whole n-gon fits. */
 
       for (k = 2; k < num_f; k++) {
+        /* Bounds-check the triangulated output: an N-gon produces 3*(N-2)
+         * indices, which can exceed the fixed-size command->f[]. */
+        if (3 * n + 2 >= TINYOBJ_MAX_FACES_PER_F_LINE) {
+          break;
+        }
         i1 = i2;
         i2 = f[k];
         command->f[3 * n + 0] = i0;
@@ -1272,7 +1292,7 @@ static int parseLine(Command *command, const char *p, size_t p_len,
 
     } else {
       size_t k = 0;
-      assert(num_f < TINYOBJ_MAX_FACES_PER_F_LINE);
+      assert(num_f <= TINYOBJ_MAX_FACES_PER_F_LINE);
       for (k = 0; k < num_f; k++) {
         command->f[k] = f[k];
       }
